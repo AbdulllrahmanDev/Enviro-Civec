@@ -8,11 +8,6 @@ const AutoCADCursor: React.FC = () => {
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
 
-  // Smooth springs for the cursor movement
-  const springConfig = { damping: 25, stiffness: 250, mass: 0.5 };
-  const smoothX = useSpring(mouseX, springConfig);
-  const smoothY = useSpring(mouseY, springConfig);
-
   const [isVisible, setIsVisible] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const [isMouseDown, setIsMouseDown] = useState(false);
@@ -156,17 +151,17 @@ const AutoCADCursor: React.FC = () => {
   }, [mouseX, mouseY, isVisible, isSelectionActive]);
 
   // Derived selection motion values
-  const selectionWidth = useTransform([smoothX, selectionStartX], ([x, sx]: number[]) => Math.abs(x - sx));
-  const selectionHeight = useTransform([smoothY, selectionStartY], ([y, sy]: number[]) => Math.abs(y - sy));
+  const selectionWidth = useTransform([mouseX, selectionStartX], ([x, sx]: number[]) => Math.abs(x - sx));
+  const selectionHeight = useTransform([mouseY, selectionStartY], ([y, sy]: number[]) => Math.abs(y - sy));
 
-  const selectionLeft = useTransform([smoothX, selectionStartX], ([x, sx]: number[]) => x < sx ? x : sx);
-  const selectionTop = useTransform([smoothY, selectionStartY], ([y, sy]: number[]) => y < sy ? y : sy);
+  const selectionLeft = useTransform([mouseX, selectionStartX], ([x, sx]: number[]) => x < sx ? x : sx);
+  const selectionTop = useTransform([mouseY, selectionStartY], ([y, sy]: number[]) => y < sy ? y : sy);
 
-  const selectionBg = useTransform([smoothX, selectionStartX], ([x, sx]: number[]) => 
+  const selectionBg = useTransform([mouseX, selectionStartX], ([x, sx]: number[]) => 
     x < sx ? 'rgba(0, 255, 0, 0.2)' : 'rgba(0, 100, 255, 0.2)'
   );
   
-  const selectionBorder = useTransform([smoothX, selectionStartX], ([x, sx]: number[]) => 
+  const selectionBorder = useTransform([mouseX, selectionStartX], ([x, sx]: number[]) => 
     `1.5px ${x < sx ? 'dashed' : 'solid'} ${x < sx ? '#00ff00' : '#00bfff'}`
   );
 
@@ -193,8 +188,8 @@ const AutoCADCursor: React.FC = () => {
       {/* Main Cursor Container */}
       <motion.div
         style={{
-          left: smoothX,
-          top: smoothY,
+          left: mouseX,
+          top: mouseY,
           x: '-50%',
           y: '-50%',
         }}
@@ -211,7 +206,7 @@ const AutoCADCursor: React.FC = () => {
             borderColor: isHovering ? 'hsl(var(--accent))' : cursorBaseColor,
             backgroundColor: isHovering ? 'hsl(var(--accent) / 0.1)' : 'transparent',
           }}
-          transition={{ duration: 0.2 }}
+          transition={{ duration: 0.1 }}
         />
 
         {/* Radiating Lines (+) */}
@@ -222,7 +217,7 @@ const AutoCADCursor: React.FC = () => {
           animate={{ 
             backgroundColor: isHovering ? 'hsl(var(--accent))' : cursorBaseColor,
           }}
-          transition={{ duration: 0.2 }}
+          transition={{ duration: 0.1 }}
         />
         {/* Bottom */}
         <motion.div
@@ -231,7 +226,7 @@ const AutoCADCursor: React.FC = () => {
           animate={{ 
             backgroundColor: isHovering ? 'hsl(var(--accent))' : cursorBaseColor,
           }}
-          transition={{ duration: 0.2 }}
+          transition={{ duration: 0.1 }}
         />
         {/* Left */}
         <motion.div
@@ -240,7 +235,7 @@ const AutoCADCursor: React.FC = () => {
           animate={{ 
             backgroundColor: isHovering ? 'hsl(var(--accent))' : cursorBaseColor,
           }}
-          transition={{ duration: 0.2 }}
+          transition={{ duration: 0.1 }}
         />
         {/* Right */}
         <motion.div
@@ -249,7 +244,7 @@ const AutoCADCursor: React.FC = () => {
           animate={{ 
             backgroundColor: isHovering ? 'hsl(var(--accent))' : cursorBaseColor,
           }}
-          transition={{ duration: 0.2 }}
+          transition={{ duration: 0.1 }}
         />
       </motion.div>
     </div>
