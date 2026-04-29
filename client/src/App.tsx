@@ -8,6 +8,8 @@ import Home from "@/pages/home";
 import PrivacyPolicy from "@/pages/privacy-policy";
 import TermsOfService from "@/pages/terms-of-service";
 
+import AutoCADCursor from "@/components/AutoCADCursor";
+
 function Router() {
   return (
     <Switch>
@@ -28,6 +30,7 @@ function App() {
       <I18nProvider>
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
+            <AutoCADCursor />
             <Toaster />
             <Router />
           </TooltipProvider>
