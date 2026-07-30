@@ -1,0 +1,11 @@
+name = "enviro-civec"
+compatibility_date = "2026-07-30"
+
+[assets]
+directory = "dist/public"
+not_found_handling = "single-page-application"
+
+[observability]
+enabled = true
+
+compatibility_flags = ["nodejs_compat"]
