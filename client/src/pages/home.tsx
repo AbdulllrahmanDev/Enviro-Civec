@@ -30,12 +30,12 @@ import patternImage from "@assets/generated_images/civil_engineering_blueprint_a
 import { fetchServices, fetchProjects, fetchTestimonials, fetchStats, submitContactForm, type ContactFormData } from "@/lib/api";
 
 const iconMap: Record<string, React.ReactNode> = {
-  Building2: <Building2 className="w-7 h-7 text-foreground" />,
-  Waves: <Waves className="w-7 h-7 text-foreground" />,
-  Truck: <Truck className="w-7 h-7 text-foreground" />,
-  ShieldCheck: <ShieldCheck className="w-7 h-7 text-foreground" />,
-  Leaf: <Leaf className="w-7 h-7 text-foreground" />,
-  Mountain: <Mountain className="w-7 h-7 text-foreground" />,
+  Building2: <Building2 className="w-7 h-7 text-accent" />,
+  Waves: <Waves className="w-7 h-7 text-accent" />,
+  Truck: <Truck className="w-7 h-7 text-accent" />,
+  ShieldCheck: <ShieldCheck className="w-7 h-7 text-accent" />,
+  Leaf: <Leaf className="w-7 h-7 text-accent" />,
+  Mountain: <Mountain className="w-7 h-7 text-accent" />,
 };
 
 import { useTheme } from "@/components/theme-provider";
@@ -321,9 +321,9 @@ export default function Home() {
               <div className="bg-gradient-to-br from-muted/50 to-muted/10 rounded-3xl p-8 lg:p-12 border border-border">
                 <div className="grid grid-cols-2 gap-6">
                   {[
-                    { icon: <Building2 className="w-8 h-8" />, title: t('about.cards.civil.title'), desc: t('about.cards.civil.desc'), color: "text-muted-foreground" },
-                    { icon: <Leaf className="w-8 h-8" />, title: t('about.cards.env.title'), desc: t('about.cards.env.desc'), color: "text-primary" },
-                    { icon: <Waves className="w-8 h-8" />, title: t('about.cards.water.title'), desc: t('about.cards.water.desc'), color: "text-blue-600" },
+                    { icon: <Building2 className="w-8 h-8" />, title: t('about.cards.civil.title'), desc: t('about.cards.civil.desc'), color: "text-accent" },
+                    { icon: <Leaf className="w-8 h-8" />, title: t('about.cards.env.title'), desc: t('about.cards.env.desc'), color: "text-accent" },
+                    { icon: <Waves className="w-8 h-8" />, title: t('about.cards.water.title'), desc: t('about.cards.water.desc'), color: "text-accent" },
                     { icon: <Mountain className="w-8 h-8" />, title: t('about.cards.geo.title'), desc: t('about.cards.geo.desc'), color: "text-accent" }
                   ].map((item, i) => (
                     <div key={i} className="bg-card p-6 rounded-2xl shadow-sm hover:shadow-lg transition-all border border-border group cursor-pointer">
@@ -375,7 +375,7 @@ export default function Home() {
                   className="bg-card p-8 rounded-2xl border border-border hover:border-primary/20 hover:shadow-xl transition-all group cursor-pointer"
                   data-testid={`service-card-${service.id}`}
                 >
-                  <div className={`w-14 h-14 rounded-xl ${service.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
+                  <div className="w-14 h-14 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-accent/20 group-hover:border-accent/40 transition-all duration-300">
                     {iconMap[service.icon] || <Building2 className="w-7 h-7" />}
                   </div>
                   <h3 className="font-serif text-xl font-bold text-foreground mb-3">{title}</h3>
