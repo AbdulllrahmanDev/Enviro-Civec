@@ -8,10 +8,10 @@ const AutoCADCursor: React.FC = () => {
   const [isMouseDown, setIsMouseDown] = useState(false);
   const [isSelectionActive, setIsSelectionActive] = useState(false);
 
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-  const selectionStartX = useMotionValue(0);
-  const selectionStartY = useMotionValue(0);
+  const mouseX = useMotionValue(-100);
+  const mouseY = useMotionValue(-100);
+  const selectionStartX = useMotionValue(-100);
+  const selectionStartY = useMotionValue(-100);
 
   // Check touch devices
   useEffect(() => {
@@ -30,7 +30,7 @@ const AutoCADCursor: React.FC = () => {
 
     const style = document.createElement('style');
     style.id = 'autocad-cursor-style';
-    style.innerHTML = `
+    style.textContent = `
       *, *::before, *::after {
         cursor: none !important;
       }
@@ -49,7 +49,7 @@ const AutoCADCursor: React.FC = () => {
       if (e.pointerType === 'touch') return;
       mouseX.set(e.clientX);
       mouseY.set(e.clientY);
-      setIsVisible(true);
+      if (!isVisible) setIsVisible(true);
 
       const target = e.target;
       if (target && target instanceof Element) {
@@ -59,38 +59,12 @@ const AutoCADCursor: React.FC = () => {
         setIsHovering(isInteractive);
       }
 
-      // AutoCAD Selection window calculation
-      if (isMouseDown && (Math.abs(e.clientX - selectionStartX.get()) > 5 || Math.abs(e.clientY - selectionStartY.get()) > 5)) {
-        setIsSelectionActive(true);
-        const sx = selectionStartX.get();
-        const sy = selectionStartY.get();
-        const curX = e.clientX;
-        const curY = e.clientY;
-
-        const isCrossing = curX < sx; // Drag left: Green Crossing box | Drag right: Blue Window box
-        const selLeft = Math.min(curX, sx);
-        const selTop = Math.min(curY, sy);
-        const selRight = Math.max(curX, sx);
-        const selBottom = Math.max(curY, sy);
-
-        const elements = document.querySelectorAll('section, nav, header, footer, div:not(#autocad-cursor-root *), .card, .badge, button, a, h1, h2, h3, p');
-        elements.forEach((el) => {
-          const rect = el.getBoundingClientRect();
-          if (rect.width === 0 || rect.height === 0) return;
-
-          let isInside = false;
-          if (isCrossing) {
-            isInside = !(rect.right < selLeft || rect.left > selRight || rect.bottom < selTop || rect.top > selBottom);
-          } else {
-            isInside = rect.left >= selLeft && rect.right <= selRight && rect.top >= selTop && rect.bottom <= selBottom;
-          }
-
-          if (isInside) {
-            el.classList.add('cad-selected');
-          } else {
-            el.classList.remove('cad-selected');
-          }
-        });
+      if (isMouseDown) {
+        const dx = Math.abs(e.clientX - selectionStartX.get());
+        const dy = Math.abs(e.clientY - selectionStartY.get());
+        if (dx > 4 || dy > 4) {
+          setIsSelectionActive(true);
+        }
       }
     };
 
@@ -104,34 +78,32 @@ const AutoCADCursor: React.FC = () => {
     const handlePointerUp = () => {
       setIsMouseDown(false);
       setIsSelectionActive(false);
-      document.querySelectorAll('.cad-selected').forEach((el) => el.classList.remove('cad-selected'));
     };
 
     const handleMouseLeave = () => {
       setIsVisible(false);
       setIsMouseDown(false);
       setIsSelectionActive(false);
-      document.querySelectorAll('.cad-selected').forEach((el) => el.classList.remove('cad-selected'));
     };
 
     const handleMouseEnter = () => {
       setIsVisible(true);
     };
 
-    window.addEventListener('pointermove', handlePointerMove, { capture: true });
-    window.addEventListener('pointerdown', handlePointerDown, { capture: true });
-    window.addEventListener('pointerup', handlePointerUp, { capture: true });
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerdown', handlePointerDown);
+    window.addEventListener('pointerup', handlePointerUp);
     document.addEventListener('mouseleave', handleMouseLeave);
     document.addEventListener('mouseenter', handleMouseEnter);
 
     return () => {
-      window.removeEventListener('pointermove', handlePointerMove, { capture: true });
-      window.removeEventListener('pointerdown', handlePointerDown, { capture: true });
-      window.removeEventListener('pointerup', handlePointerUp, { capture: true });
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerdown', handlePointerDown);
+      window.removeEventListener('pointerup', handlePointerUp);
       document.removeEventListener('mouseleave', handleMouseLeave);
       document.removeEventListener('mouseenter', handleMouseEnter);
     };
-  }, [isTouch, isMouseDown]);
+  }, [isTouch, isVisible, isMouseDown]);
 
   // Selection box transforms
   const selectionWidth = useTransform([mouseX, selectionStartX], ([x, sx]: number[]) => Math.abs(x - sx));
@@ -139,12 +111,12 @@ const AutoCADCursor: React.FC = () => {
   const selectionLeft = useTransform([mouseX, selectionStartX], ([x, sx]: number[]) => (x < sx ? x : sx));
   const selectionTop = useTransform([mouseY, selectionStartY], ([y, sy]: number[]) => (y < sy ? y : sy));
 
-  // AutoCAD Green (Crossing) vs Blue (Window) selection box colors
+  // AutoCAD Green (Crossing / Drag Left) vs Blue (Window / Drag Right) selection box colors
   const selectionBg = useTransform([mouseX, selectionStartX], ([x, sx]: number[]) =>
-    x < sx ? 'rgba(0, 255, 128, 0.15)' : 'rgba(0, 120, 215, 0.15)'
+    x < sx ? 'rgba(34, 197, 94, 0.18)' : 'rgba(59, 130, 246, 0.18)'
   );
   const selectionBorder = useTransform([mouseX, selectionStartX], ([x, sx]: number[]) =>
-    x < sx ? '1px dashed rgba(0, 255, 128, 0.8)' : '1px solid rgba(0, 120, 215, 0.8)'
+    x < sx ? '1.5px dashed rgba(34, 197, 94, 0.9)' : '1.5px solid rgba(59, 130, 246, 0.9)'
   );
 
   const cursorBaseColor = 'hsl(var(--color-cursor, 0 0% 100%))';
@@ -152,8 +124,8 @@ const AutoCADCursor: React.FC = () => {
   if (isTouch || !isVisible) return null;
 
   return (
-    <div id="autocad-cursor-root" className="fixed inset-0 pointer-events-none z-[999999] overflow-hidden">
-      {/* Selection Box */}
+    <div id="autocad-cursor-root" className="fixed inset-0 pointer-events-none z-[999999] overflow-hidden select-none">
+      {/* AutoCAD Visual Selection Box */}
       {isSelectionActive && (
         <motion.div
           style={{
@@ -186,10 +158,10 @@ const AutoCADCursor: React.FC = () => {
         }}
         className="pointer-events-none"
       >
-        <div className="relative w-32 h-32 flex items-center justify-center">
+        <div className="relative w-32 h-32 flex items-center justify-center pointer-events-none">
           {/* Central Pick Box */}
           <motion.div
-            className="absolute border-2 transition-colors duration-150"
+            className="absolute border-2 transition-colors duration-150 pointer-events-none"
             style={{
               width: 12,
               height: 12,
@@ -200,7 +172,7 @@ const AutoCADCursor: React.FC = () => {
 
           {/* Top Line */}
           <motion.div
-            className="absolute w-[1.5px] transition-colors duration-150"
+            className="absolute w-[1.5px] transition-colors duration-150 pointer-events-none"
             style={{
               bottom: 'calc(50% + 6px)',
               height: 40,
@@ -209,7 +181,7 @@ const AutoCADCursor: React.FC = () => {
           />
           {/* Bottom Line */}
           <motion.div
-            className="absolute w-[1.5px] transition-colors duration-150"
+            className="absolute w-[1.5px] transition-colors duration-150 pointer-events-none"
             style={{
               top: 'calc(50% + 6px)',
               height: 40,
@@ -218,7 +190,7 @@ const AutoCADCursor: React.FC = () => {
           />
           {/* Left Line */}
           <motion.div
-            className="absolute h-[1.5px] transition-colors duration-150"
+            className="absolute h-[1.5px] transition-colors duration-150 pointer-events-none"
             style={{
               right: 'calc(50% + 6px)',
               width: 40,
@@ -227,7 +199,7 @@ const AutoCADCursor: React.FC = () => {
           />
           {/* Right Line */}
           <motion.div
-            className="absolute h-[1.5px] transition-colors duration-150"
+            className="absolute h-[1.5px] transition-colors duration-150 pointer-events-none"
             style={{
               left: 'calc(50% + 6px)',
               width: 40,

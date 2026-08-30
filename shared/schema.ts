@@ -100,7 +100,15 @@ export const contactMessages = sqliteTable("contact_messages", {
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 });
 
-export const insertContactMessageSchema = createInsertSchema(contactMessages).omit({ id: true, isRead: true, createdAt: true });
+export const insertContactMessageSchema = createInsertSchema(contactMessages, {
+  name: z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name is too long"),
+  email: z.string().trim().email("Please enter a valid email address").max(255),
+  phone: z.string().trim().max(30).optional().nullable(),
+  service: z.string().trim().max(100).optional().nullable(),
+  message: z.string().trim().min(5, "Message must be at least 5 characters").max(3000, "Message is too long"),
+}).omit({ id: true, isRead: true, createdAt: true }).extend({
+  bot_trap: z.string().optional(),
+});
 export type InsertContactMessage = z.infer<typeof insertContactMessageSchema>;
 export type ContactMessage = typeof contactMessages.$inferSelect;
 

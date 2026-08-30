@@ -1,5 +1,6 @@
 import type React from "react";
 import { useState, useEffect } from "react";
+import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import {
@@ -672,12 +673,25 @@ export default function Home() {
 
             <div className="bg-card backdrop-blur-sm rounded-2xl p-8 border border-border">
               <h3 className="font-serif text-2xl font-bold mb-6">{t('contact.form.title')}</h3>
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-5 relative">
+                {/* Honeypot field for bot spam protection - completely invisible to human users */}
+                <div style={{ opacity: 0, position: 'absolute', top: 0, left: 0, height: 0, width: 0, zIndex: -1, pointerEvents: 'none' }} aria-hidden="true">
+                  <input
+                    type="text"
+                    name="bot_trap"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    value={formData.bot_trap || ""}
+                    onChange={(e) => setFormData(prev => ({ ...prev, bot_trap: e.target.value }))}
+                  />
+                </div>
+
                 <div className="grid md:grid-cols-2 gap-5">
                   <input
                     type="text"
                     placeholder={t('contact.form.name')}
                     required
+                    maxLength={100}
                     data-testid="input-name"
                     value={formData.name}
                     onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
@@ -687,6 +701,7 @@ export default function Home() {
                     type="email"
                     placeholder={t('contact.form.email')}
                     required
+                    maxLength={255}
                     data-testid="input-email"
                     value={formData.email}
                     onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
@@ -696,6 +711,7 @@ export default function Home() {
                 <input
                   type="tel"
                   placeholder={t('contact.form.phone')}
+                  maxLength={30}
                   data-testid="input-phone"
                   value={formData.phone}
                   onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
@@ -717,6 +733,7 @@ export default function Home() {
                 <textarea
                   placeholder={t('contact.form.message')}
                   required
+                  maxLength={3000}
                   rows={5}
                   data-testid="input-message"
                   value={formData.message}
@@ -790,8 +807,8 @@ export default function Home() {
               {t('footer.rights')}
             </div>
             <div className="flex gap-6 text-sm text-muted-foreground">
-              <a href="/privacy-policy" className="hover:text-primary transition-colors">{t('footer.privacy')}</a>
-              <a href="/terms-of-service" className="hover:text-primary transition-colors">{t('footer.terms')}</a>
+              <Link href="/privacy-policy" className="hover:text-primary transition-colors">{t('footer.privacy')}</Link>
+              <Link href="/terms-of-service" className="hover:text-primary transition-colors">{t('footer.terms')}</Link>
             </div>
           </div>
         </div>

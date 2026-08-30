@@ -22,13 +22,23 @@ const I18nContext = createContext<I18nContextType | undefined>(undefined);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
     const [language, setLanguageState] = useState<Language>(() => {
-        const saved = localStorage.getItem("language");
-        return (saved === "en" || saved === "ar") ? saved : "en";
+        try {
+            const saved = localStorage.getItem("language");
+            return (saved === "en" || saved === "ar") ? saved : "en";
+        } catch {
+            return "en";
+        }
     });
 
     const setLanguage = (lang: Language) => {
-        setLanguageState(lang);
-        localStorage.setItem("language", lang);
+        if (lang === "en" || lang === "ar") {
+            setLanguageState(lang);
+            try {
+                localStorage.setItem("language", lang);
+            } catch {
+                // Safe fallback
+            }
+        }
     };
 
     const dir = language === "ar" ? "rtl" : "ltr";

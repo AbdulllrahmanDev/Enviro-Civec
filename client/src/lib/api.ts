@@ -260,6 +260,7 @@ export interface ContactFormData {
   phone?: string;
   service?: string;
   message: string;
+  bot_trap?: string;
 }
 
 export async function submitContactForm(data: ContactFormData): Promise<{ success: boolean; message: string }> {
@@ -271,12 +272,15 @@ export async function submitContactForm(data: ContactFormData): Promise<{ succes
     });
 
     if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.message || "Failed to submit form");
+      const error = await res.json().catch(() => ({}));
+      throw new Error(error.error || error.message || "Failed to submit form");
     }
 
     return res.json();
-  } catch {
+  } catch (err: any) {
+    if (err.message && err.message !== "Failed to fetch") {
+      throw err;
+    }
     return { success: true, message: "Thank you! Your message has been received." };
   }
 }

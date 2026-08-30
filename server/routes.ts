@@ -107,15 +107,43 @@ export async function registerRoutes(
     }
   });
 
+  // Rate limiting tracker for contact submissions (in-memory)
+  const contactRateLimits = new Map<string, number[]>();
+  const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+  const MAX_SUBMISSIONS_PER_WINDOW = 5;
+
   // ============ Contact Messages ============
   app.post("/api/contact", async (req, res) => {
     try {
+      // IP Rate limiting
+      const clientIp = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.socket.remoteAddress || "unknown";
+      const now = Date.now();
+      const userTimestamps = (contactRateLimits.get(clientIp) || []).filter(ts => now - ts < RATE_LIMIT_WINDOW_MS);
+
+      if (userTimestamps.length >= MAX_SUBMISSIONS_PER_WINDOW) {
+        return res.status(429).json({
+          error: "لقد أرسلت عدة رسائل في وقت قصير، يرجى الانتظار بضع دقائق ثم المحاولة مجدداً / Too many requests, please try again later."
+        });
+      }
+
       const validatedData = insertContactMessageSchema.parse(req.body);
-      const message = await storage.createContactMessage(validatedData);
+
+      // Honeypot Bot Trap: If hidden bot_trap field was filled by a spam bot, reject/fake success silently
+      if (validatedData.bot_trap && validatedData.bot_trap.trim().length > 0) {
+        return res.status(200).json({ success: true, message: "Message sent successfully" });
+      }
+
+      // Record this attempt for rate limiting
+      userTimestamps.push(now);
+      contactRateLimits.set(clientIp, userTimestamps);
+
+      const { bot_trap, ...messageData } = validatedData;
+      const message = await storage.createContactMessage(messageData);
       res.status(201).json({ success: true, message: "Message sent successfully", id: message.id });
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid data", details: error.errors });
+        const firstError = error.errors[0]?.message || "Invalid data";
+        return res.status(400).json({ error: firstError, details: error.errors });
       }
       console.error("Error creating contact message:", error);
       res.status(500).json({ error: "Failed to send message" });
