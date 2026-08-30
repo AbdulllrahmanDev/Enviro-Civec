@@ -148,8 +148,11 @@ export default function Home() {
     contactMutation.mutate(formData);
   };
 
+  const [isScrolled, setIsScrolled] = useState(false);
+
   useEffect(() => {
     const handleScroll = () => {
+      setIsScrolled(window.scrollY > 60);
       setShowScrollTop(window.scrollY > 400);
     };
     window.addEventListener("scroll", handleScroll);
@@ -219,8 +222,14 @@ export default function Home() {
         style={{ scaleX }}
       />
 
-      {/* Navigation Header */}
-      <header className="fixed top-0 left-0 right-0 z-40 bg-background/90 backdrop-blur-md border-b border-border transition-all duration-200">
+      {/* Navigation Header with Floating Transparent to Solid Transition */}
+      <header
+        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
+          isScrolled
+            ? "bg-background/90 backdrop-blur-md border-b border-border shadow-sm"
+            : "bg-transparent border-b border-transparent"
+        }`}
+      >
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           {/* Logo & Brand */}
           <Link href="/" className="flex items-center gap-3 group cursor-pointer">
@@ -230,10 +239,18 @@ export default function Home() {
               className="h-10 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
             />
             <div className="flex flex-col">
-              <span className="font-serif text-lg font-bold tracking-tight text-foreground">
+              <span
+                className={`font-serif text-lg font-bold tracking-tight transition-colors duration-200 ${
+                  isScrolled ? "text-foreground" : "text-white drop-shadow-md"
+                }`}
+              >
                 {t("brandName")}
               </span>
-              <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
+              <span
+                className={`text-[10px] uppercase tracking-widest font-semibold transition-colors duration-200 ${
+                  isScrolled ? "text-muted-foreground" : "text-white/80"
+                }`}
+              >
                 {language === "ar" ? "استشارات هندسية وبيئية" : "Engineering Consultants"}
               </span>
             </div>
@@ -245,7 +262,11 @@ export default function Home() {
               <button
                 key={link.id}
                 onClick={() => scrollToSection(link.id)}
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-150 relative py-1 cursor-pointer"
+                className={`text-sm font-medium transition-colors duration-150 relative py-1 cursor-pointer ${
+                  isScrolled
+                    ? "text-muted-foreground hover:text-foreground"
+                    : "text-white/85 hover:text-white drop-shadow-sm"
+                }`}
               >
                 {link.label}
               </button>
@@ -257,28 +278,36 @@ export default function Home() {
             {/* Language Switch */}
             <button
               onClick={() => setLanguage(language === "ar" ? "en" : "ar")}
-              className="px-3 py-1.5 rounded-lg border border-border text-xs font-semibold hover:bg-muted transition-colors flex items-center gap-1.5 cursor-pointer"
+              className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                isScrolled
+                  ? "border-border hover:bg-muted text-foreground"
+                  : "border-white/30 bg-black/25 backdrop-blur-sm text-white hover:bg-white/20"
+              }`}
               title="Change Language"
               aria-label="Toggle language"
             >
-              <Globe className="w-3.5 h-3.5 text-muted-foreground" />
+              <Globe className={`w-3.5 h-3.5 ${isScrolled ? "text-muted-foreground" : "text-white/80"}`} />
               <span>{language === "ar" ? "English" : "العربية"}</span>
             </button>
 
             {/* Theme Switch */}
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="p-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+              className={`p-2 rounded-lg border transition-all cursor-pointer ${
+                isScrolled
+                  ? "border-border text-muted-foreground hover:text-foreground hover:bg-muted"
+                  : "border-white/30 bg-black/25 backdrop-blur-sm text-white hover:bg-white/20"
+              }`}
               title="Toggle Theme"
               aria-label="Toggle theme"
             >
-              {theme === "dark" ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
+              {theme === "dark" ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-200" />}
             </button>
 
             {/* Inquire CTA */}
             <button
               onClick={() => scrollToSection("contact")}
-              className="hidden sm:inline-flex items-center gap-2 bg-accent text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-accent/90 transition-all active:scale-95 shadow-sm cursor-pointer"
+              className="hidden sm:inline-flex items-center gap-2 bg-accent text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-accent/90 transition-all active:scale-95 shadow-md cursor-pointer"
             >
               <span>{t("nav.consultation")}</span>
               {dir === "ltr" ? <ArrowRight className="w-4 h-4" /> : <ArrowRight className="w-4 h-4 rotate-180" />}

@@ -9,6 +9,8 @@ export interface MetroHeroProps {
   description?: string;
   scrollHint?: string;
   tagline?: string;
+  taglineLine1?: string;
+  taglineLine2?: string;
   consultationText?: string;
   viewProjectsText?: string;
   onConsultationClick?: () => void;
