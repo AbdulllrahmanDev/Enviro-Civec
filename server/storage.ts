@@ -8,7 +8,7 @@ import {
   companyStats, type CompanyStat, type InsertCompanyStat
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, asc } from "drizzle-orm";
+import { eq, and, desc, asc } from "drizzle-orm";
 
 export interface IStorage {
   // Services
@@ -103,8 +103,7 @@ export class DatabaseStorage implements IStorage {
 
   async getFeaturedTestimonials(): Promise<Testimonial[]> {
     return db.select().from(testimonials)
-      .where(eq(testimonials.featured, true))
-      .where(eq(testimonials.isActive, true));
+      .where(and(eq(testimonials.featured, true), eq(testimonials.isActive, true)));
   }
 
   async createTestimonial(testimonial: InsertTestimonial): Promise<Testimonial> {

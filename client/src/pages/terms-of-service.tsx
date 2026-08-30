@@ -1,9 +1,8 @@
 import { useTranslation } from "@/lib/i18n";
 import { Link } from "wouter";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { useTheme } from "@/components/theme-provider";
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 
 export default function TermsOfService() {
     const { t, dir } = useTranslation();
@@ -16,10 +15,10 @@ export default function TermsOfService() {
         return () => clearTimeout(timer);
     }, []);
 
-    const sections = t('termsOfService.sections') as any[];
+    const sections = (t('termsOfService.sections') as Array<{ title: string; content: string }>) || [];
 
     // Staggered animation variants
-    const container = {
+    const container: Variants = {
         hidden: { opacity: 0 },
         show: {
             opacity: 1,
@@ -30,7 +29,7 @@ export default function TermsOfService() {
         }
     };
 
-    const item = {
+    const item: Variants = {
         hidden: { opacity: 0, y: 20 },
         show: {
             opacity: 1,

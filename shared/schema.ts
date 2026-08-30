@@ -15,7 +15,9 @@ export const services = sqliteTable("services", {
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
 });
 
-export const insertServiceSchema = createInsertSchema(services).omit({ id: true });
+export const insertServiceSchema = createInsertSchema(services, {
+  features: z.array(z.string()),
+}).omit({ id: true });
 export type InsertService = z.infer<typeof insertServiceSchema>;
 export type Service = typeof services.$inferSelect;
 

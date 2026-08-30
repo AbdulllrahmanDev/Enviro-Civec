@@ -1,3 +1,5 @@
+import type React from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import {
@@ -20,14 +22,26 @@ import {
   Star,
   Calendar,
   MapPinned,
-  Loader2
+  Loader2,
+  Moon,
+  Sun,
+  ArrowUp,
+  Globe
 } from "lucide-react";
-import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useTheme } from "@/components/theme-provider";
+import { useTranslation } from "@/lib/i18n";
+import {
+  fetchServices,
+  fetchProjects,
+  fetchTestimonials,
+  fetchStats,
+  submitContactForm,
+  type ContactFormData
+} from "@/lib/api";
 import logo from "@assets/Enviro_Civec.png";
 import heroImage from "@assets/generated_images/infrastructure_engineering_hero_background.png";
 import patternImage from "@assets/generated_images/civil_engineering_blueprint_abstract.png";
-import { fetchServices, fetchProjects, fetchTestimonials, fetchStats, submitContactForm, type ContactFormData } from "@/lib/api";
 
 const iconMap: Record<string, React.ReactNode> = {
   Building2: <Building2 className="w-7 h-7 text-accent" />,
@@ -37,11 +51,6 @@ const iconMap: Record<string, React.ReactNode> = {
   Leaf: <Leaf className="w-7 h-7 text-accent" />,
   Mountain: <Mountain className="w-7 h-7 text-accent" />,
 };
-
-import { useTheme } from "@/components/theme-provider";
-import { Moon, Sun, ArrowUp, Globe } from "lucide-react";
-import { useEffect } from "react";
-import { useTranslation } from "@/lib/i18n";
 
 export default function Home() {
   const { t, language, setLanguage, dir } = useTranslation();
