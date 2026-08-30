@@ -43,6 +43,7 @@ import {
 import logo from "@assets/Enviro_Civec.png";
 import heroImage from "@assets/generated_images/infrastructure_engineering_hero_background.png";
 import patternImage from "@assets/generated_images/civil_engineering_blueprint_abstract.png";
+import MetroHero from "@/components/ui/scroll-locked-video-hero";
 
 // Icon mapping for services
 const iconMap: Record<string, React.ReactNode> = {
@@ -287,67 +288,22 @@ export default function Home() {
       </header>
 
       {/* Main Content */}
-      <main className="pt-20">
-        {/* ================= HERO SECTION WITH FULL BACKGROUND IMAGE ================= */}
-        <section className="relative min-h-[85vh] flex items-center py-24 px-6 overflow-hidden border-b border-border">
-          {/* Full Hero Background Image with Lightened, Clear Overlay */}
-          <div className="absolute inset-0 z-0">
-            <img
-              src={heroImage}
-              alt="Engineering Infrastructure Background"
-              className="w-full h-full object-cover object-center"
-            />
-            {/* Very light transparent wash so the background image is clearly visible */}
-            <div className="absolute inset-0 bg-gradient-to-r from-background/70 via-background/40 to-transparent dark:from-background/80 dark:via-background/50 dark:to-background/20" />
-          </div>
-
-          <div className="max-w-7xl mx-auto w-full relative z-10">
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={staggerContainer}
-              className="max-w-3xl flex flex-col items-start"
-            >
-              {/* Master Headline */}
-              <motion.h1
-                variants={fadeInUp}
-                className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground leading-[1.18] mb-6"
-              >
-                {t("hero.title_line1")}{" "}
-                <span className="text-accent underline decoration-border/60 underline-offset-8">
-                  {t("hero.title_line2")}
-                </span>{" "}
-                {t("hero.title_line3")}
-              </motion.h1>
-
-              {/* Description */}
-              <motion.p
-                variants={fadeInUp}
-                className="text-base sm:text-lg text-foreground/90 font-medium leading-relaxed max-w-2xl mb-8 drop-shadow-sm"
-              >
-                {t("hero.description")}
-              </motion.p>
-
-              {/* Dual Action Buttons */}
-              <motion.div variants={fadeInUp} className="flex flex-wrap items-center gap-4 w-full sm:w-auto">
-                <button
-                  onClick={() => scrollToSection("contact")}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-accent text-white px-7 py-3.5 rounded-lg text-base font-semibold hover:bg-accent/90 transition-all shadow-md active:scale-95 cursor-pointer"
-                >
-                  <span>{t("nav.consultation")}</span>
-                  {dir === "ltr" ? <ArrowRight className="w-4 h-4" /> : <ArrowRight className="w-4 h-4 rotate-180" />}
-                </button>
-
-                <button
-                  onClick={() => scrollToSection("projects")}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-card border border-border text-foreground px-6 py-3.5 rounded-lg text-base font-semibold hover:bg-muted transition-all active:scale-95 cursor-pointer"
-                >
-                  <span>{t("nav.viewProjects")}</span>
-                </button>
-              </motion.div>
-            </motion.div>
-          </div>
-        </section>
+      <main className="pt-0">
+        {/* ================= SCROLL-LOCKED VIDEO HERO SECTION ================= */}
+        <MetroHero
+          titleLine1={t("hero.title_line1")}
+          titleLine2={t("hero.title_line2")}
+          titleLine3={t("hero.title_line3")}
+          description={t("hero.description")}
+          scrollHint={language === "ar" ? "مرر لأسفل لاستعراض المشروع" : "SCROLL TO EXPLORE"}
+          tagline={language === "ar" ? "حلول هندسية متقدمة • استدامة بيئية رائدة" : "Advanced Engineering Solutions • Sustainable Infrastructure"}
+          consultationText={t("nav.consultation")}
+          viewProjectsText={t("nav.viewProjects")}
+          onConsultationClick={() => scrollToSection("contact")}
+          onViewProjectsClick={() => scrollToSection("projects")}
+          dir={dir}
+          scrubDistance={4800}
+        />
 
         {/* ================= METRICS & STATS BAR ================= */}
         <section className="py-12 bg-card border-b border-border">
