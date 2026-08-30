@@ -327,7 +327,7 @@ export default function MetroHero({
 
             <button
               onClick={onViewProjectsClick}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white/15 backdrop-blur-md border border-white/30 text-white px-7 py-4 rounded-xl text-base font-semibold hover:bg-white/25 transition-all active:scale-95 cursor-pointer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-black/40 border border-white/40 text-white px-7 py-4 rounded-xl text-base font-semibold hover:bg-black/60 hover:border-white/60 transition-all active:scale-95 shadow-md cursor-pointer"
             >
               <span>{viewProjectsText}</span>
             </button>
