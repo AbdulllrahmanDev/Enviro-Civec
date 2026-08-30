@@ -20,8 +20,9 @@ export interface MetroHeroProps {
   style?: React.CSSProperties;
 }
 
-// High quality civil engineering infrastructure & highway construction video
-const DEFAULT_VIDEO = "/videos/infrastructure_hero.webm";
+// High quality civil engineering infrastructure & piping video
+const DEFAULT_VIDEO = "/videos/infrastructure_hero.mp4";
+const WEBM_VIDEO = "/videos/infrastructure_hero.webm";
 const FALLBACK_VIDEO =
   "https://upload.wikimedia.org/wikipedia/commons/5/51/Timelapse_of_I-285_and_SR_400_interchange_construction_in_Georgia_USA.webm";
 
@@ -250,9 +251,13 @@ export default function MetroHero({
       {/* Background Video */}
       <video
         ref={videoRef}
-        src={videoSrc}
+        src={videoSrc || DEFAULT_VIDEO}
         onError={() => {
-          if (videoRef.current && videoRef.current.src !== FALLBACK_VIDEO) {
+          if (!videoRef.current) return;
+          if (videoRef.current.src.endsWith(".mp4")) {
+            videoRef.current.src = WEBM_VIDEO;
+            videoRef.current.load();
+          } else if (videoRef.current.src !== FALLBACK_VIDEO) {
             videoRef.current.src = FALLBACK_VIDEO;
             videoRef.current.load();
           }
