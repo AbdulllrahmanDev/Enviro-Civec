@@ -41,7 +41,9 @@ export default function MetroHero({
   titleLine3 = "مستدامة",
   description = "شريكك الموثوق في الاستشارات الهندسية البيئية والمدنية. نصمم بنية تحتية تخدم المجتمعات وتحترم كوكبنا.",
   scrollHint = "تمرير لأسفل",
-  tagline = "دقة معمارية واستشارات هندسية تصنع المستقبل",
+  tagline,
+  taglineLine1 = "حلول هندسية متقدمة",
+  taglineLine2 = "استدامة بيئية رائدة",
   consultationText = "طلب استشارة",
   viewProjectsText = "استكشاف المشاريع",
   onConsultationClick,
@@ -334,17 +336,35 @@ export default function MetroHero({
       </div>
 
       {/* Second Tagline revealed near end of video scrub */}
-      {tagline && (
+      {(taglineLine1 || taglineLine2 || tagline) && (
         <div
           ref={taglineRef}
-          className="absolute inset-0 flex items-center justify-center px-6 text-center opacity-0 pointer-events-none z-10"
+          className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center opacity-0 pointer-events-none z-10 gap-3"
         >
-          <span
-            className="font-serif font-bold text-2xl sm:text-4xl md:text-5xl text-white drop-shadow-2xl leading-tight max-w-3xl"
-            style={{ fontFamily: SANS }}
-          >
-            {tagline}
-          </span>
+          {taglineLine1 && (
+            <span
+              className="font-serif font-bold text-3xl sm:text-5xl md:text-6xl text-white drop-shadow-[0_10px_20px_rgba(0,0,0,0.9)] tracking-tight leading-tight max-w-4xl"
+              style={{ fontFamily: SANS }}
+            >
+              {taglineLine1}
+            </span>
+          )}
+          {taglineLine2 && (
+            <span
+              className="font-serif font-bold text-2xl sm:text-4xl md:text-5xl text-accent drop-shadow-[0_10px_20px_rgba(0,0,0,0.9)] tracking-tight leading-tight max-w-4xl"
+              style={{ fontFamily: SANS }}
+            >
+              {taglineLine2}
+            </span>
+          )}
+          {!taglineLine1 && !taglineLine2 && tagline && (
+            <span
+              className="font-serif font-bold text-2xl sm:text-4xl md:text-5xl text-white drop-shadow-2xl leading-tight max-w-3xl"
+              style={{ fontFamily: SANS }}
+            >
+              {tagline}
+            </span>
+          )}
         </div>
       )}
 

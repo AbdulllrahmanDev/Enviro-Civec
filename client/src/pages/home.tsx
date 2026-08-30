@@ -325,7 +325,8 @@ export default function Home() {
           titleLine3={t("hero.title_line3")}
           description={t("hero.description")}
           scrollHint={language === "ar" ? "مرر لأسفل لاستعراض المشروع" : "SCROLL TO EXPLORE"}
-          tagline={language === "ar" ? "حلول هندسية متقدمة • استدامة بيئية رائدة" : "Advanced Engineering Solutions • Sustainable Infrastructure"}
+          taglineLine1={language === "ar" ? "حلول هندسية متقدمة" : "Advanced Engineering Solutions"}
+          taglineLine2={language === "ar" ? "استدامة بيئية رائدة" : "Sustainable Infrastructure"}
           consultationText={t("nav.consultation")}
           viewProjectsText={t("nav.viewProjects")}
           onConsultationClick={() => scrollToSection("contact")}

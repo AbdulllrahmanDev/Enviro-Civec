@@ -24,9 +24,9 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     const [language, setLanguageState] = useState<Language>(() => {
         try {
             const saved = localStorage.getItem("language");
-            return (saved === "en" || saved === "ar") ? saved : "en";
+            return (saved === "en" || saved === "ar") ? saved : "ar";
         } catch {
-            return "en";
+            return "ar";
         }
     });
 
