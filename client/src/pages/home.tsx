@@ -178,7 +178,6 @@ export default function Home() {
   }, [projects, selectedCategory]);
 
   const navLinks = [
-    { id: "about", label: t("nav.about") },
     { id: "services", label: t("nav.services") },
     { id: "methodology", label: language === "ar" ? "منهجية العمل" : "Methodology" },
     { id: "projects", label: t("nav.projects") },
@@ -278,30 +277,34 @@ export default function Home() {
             {/* Language Switch */}
             <button
               onClick={() => setLanguage(language === "ar" ? "en" : "ar")}
-              className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`px-2.5 py-1.5 rounded-lg border-0 bg-transparent text-sm font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
                 isScrolled
-                  ? "border-border hover:bg-muted text-foreground"
-                  : "border-white/30 bg-black/25 backdrop-blur-sm text-white hover:bg-white/20"
+                  ? "text-foreground hover:text-accent active:text-accent"
+                  : "text-white hover:text-accent active:text-accent drop-shadow-md"
               }`}
               title="Change Language"
               aria-label="Toggle language"
             >
-              <Globe className={`w-3.5 h-3.5 ${isScrolled ? "text-muted-foreground" : "text-white/80"}`} />
+              <Globe className="w-4 h-4 transition-colors" />
               <span>{language === "ar" ? "English" : "العربية"}</span>
             </button>
 
             {/* Theme Switch */}
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className={`p-2 rounded-lg border transition-all cursor-pointer ${
+              className={`p-1.5 rounded-lg border-0 bg-transparent transition-colors cursor-pointer ${
                 isScrolled
-                  ? "border-border text-muted-foreground hover:text-foreground hover:bg-muted"
-                  : "border-white/30 bg-black/25 backdrop-blur-sm text-white hover:bg-white/20"
+                  ? "text-foreground hover:text-accent active:text-accent"
+                  : "text-white hover:text-accent active:text-accent drop-shadow-md"
               }`}
               title="Toggle Theme"
               aria-label="Toggle theme"
             >
-              {theme === "dark" ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-200" />}
+              {theme === "dark" ? (
+                <Sun className="w-5 h-5 transition-colors" />
+              ) : (
+                <Moon className="w-5 h-5 transition-colors" />
+              )}
             </button>
 
             {/* Inquire CTA */}
