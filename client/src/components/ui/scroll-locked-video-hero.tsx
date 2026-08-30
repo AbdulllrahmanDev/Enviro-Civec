@@ -21,8 +21,8 @@ export interface MetroHeroProps {
 }
 
 // High quality civil engineering infrastructure & piping video
-const DEFAULT_VIDEO = "/videos/infrastructure_hero.mp4";
-const WEBM_VIDEO = "/videos/infrastructure_hero.webm";
+const DEFAULT_VIDEO = "/videos/infrastructure.hero.mp4";
+const WEBM_VIDEO = "/videos/infrastructure.hero.webm";
 const FALLBACK_VIDEO =
   "https://upload.wikimedia.org/wikipedia/commons/5/51/Timelapse_of_I-285_and_SR_400_interchange_construction_in_Georgia_USA.webm";
 
