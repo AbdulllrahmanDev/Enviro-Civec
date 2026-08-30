@@ -1,213 +1,211 @@
-import React, { useEffect, useState } from 'react';
-import { motion, useMotionValue, useTransform } from 'framer-motion';
+import React, { useEffect, useRef } from 'react';
 
 const AutoCADCursor: React.FC = () => {
-  const [isTouch, setIsTouch] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
-  const [isHovering, setIsHovering] = useState(false);
-  const [isMouseDown, setIsMouseDown] = useState(false);
-  const [isSelectionActive, setIsSelectionActive] = useState(false);
+  const cursorRef = useRef<HTMLDivElement>(null);
+  const selectionRef = useRef<HTMLDivElement>(null);
 
-  const mouseX = useMotionValue(-100);
-  const mouseY = useMotionValue(-100);
-  const selectionStartX = useMotionValue(-100);
-  const selectionStartY = useMotionValue(-100);
-
-  // Check touch devices
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const touchMedia = window.matchMedia('(pointer: coarse)');
-      setIsTouch(touchMedia.matches);
-      const listener = (e: MediaQueryListEvent) => setIsTouch(e.matches);
-      touchMedia.addEventListener('change', listener);
-      return () => touchMedia.removeEventListener('change', listener);
+    // Disable on touch devices
+    if (typeof window === 'undefined' || window.matchMedia('(pointer: coarse)').matches) {
+      return;
     }
-  }, []);
 
-  // Hide default cursor only when desktop and cursor is actively visible
-  useEffect(() => {
-    if (isTouch || !isVisible) return;
+    const cursor = cursorRef.current;
+    const selection = selectionRef.current;
+    if (!cursor) return;
 
-    const style = document.createElement('style');
-    style.id = 'autocad-cursor-style';
-    style.textContent = `
-      *, *::before, *::after {
-        cursor: none !important;
+    let mouseX = -100;
+    let mouseY = -100;
+    let startX = 0;
+    let startY = 0;
+    let isMouseDown = false;
+    let isSelecting = false;
+    let isHovering = false;
+    let isVisible = false;
+    let rafId = 0;
+
+    const interactiveSelector =
+      'a, button, input, select, textarea, [role="button"], .interactive, [data-interactive="true"], .btn-primary, .btn-secondary, .filter-tab, .icon-btn';
+
+    const updateCursor = () => {
+      if (cursor) {
+        cursor.style.transform = `translate3d(${mouseX}px, ${mouseY}px, 0) translate(-50%, -50%) scale(${isMouseDown ? 0.85 : 1})`;
+        cursor.style.opacity = isVisible ? '1' : '0';
+        if (isHovering) {
+          cursor.classList.add('cursor-hovering');
+        } else {
+          cursor.classList.remove('cursor-hovering');
+        }
       }
-    `;
-    document.head.appendChild(style);
-    return () => {
-      const existing = document.getElementById('autocad-cursor-style');
-      if (existing) document.head.removeChild(existing);
-    };
-  }, [isTouch, isVisible]);
 
-  useEffect(() => {
-    if (isTouch) return;
+      if (selection) {
+        if (isSelecting) {
+          const x = Math.min(mouseX, startX);
+          const y = Math.min(mouseY, startY);
+          const w = Math.abs(mouseX - startX);
+          const h = Math.abs(mouseY - startY);
+          const isLeftDrag = mouseX < startX;
+
+          selection.style.display = 'block';
+          selection.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+          selection.style.width = `${w}px`;
+          selection.style.height = `${h}px`;
+          selection.style.backgroundColor = isLeftDrag
+            ? 'rgba(34, 197, 94, 0.18)'
+            : 'rgba(59, 130, 246, 0.18)';
+          selection.style.border = isLeftDrag
+            ? '1.5px dashed rgba(34, 197, 94, 0.9)'
+            : '1.5px solid rgba(59, 130, 246, 0.9)';
+        } else {
+          selection.style.display = 'none';
+        }
+      }
+    };
 
     const handlePointerMove = (e: PointerEvent) => {
       if (e.pointerType === 'touch') return;
-      mouseX.set(e.clientX);
-      mouseY.set(e.clientY);
-      if (!isVisible) setIsVisible(true);
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+      if (!isVisible) isVisible = true;
 
-      const target = e.target;
-      if (target && target instanceof Element) {
-        const isInteractive =
-          target.closest('a, button, input, select, textarea, [role="button"], .interactive') !== null ||
-          window.getComputedStyle(target).cursor === 'pointer';
-        setIsHovering(isInteractive);
+      const target = e.target as HTMLElement | null;
+      const hoveringNow = !!target && !!target.closest(interactiveSelector);
+
+      if (hoveringNow !== isHovering) {
+        isHovering = hoveringNow;
       }
 
       if (isMouseDown) {
-        const dx = Math.abs(e.clientX - selectionStartX.get());
-        const dy = Math.abs(e.clientY - selectionStartY.get());
+        const dx = Math.abs(mouseX - startX);
+        const dy = Math.abs(mouseY - startY);
         if (dx > 4 || dy > 4) {
-          setIsSelectionActive(true);
+          isSelecting = true;
         }
+      }
+
+      if (!rafId) {
+        rafId = requestAnimationFrame(() => {
+          updateCursor();
+          rafId = 0;
+        });
       }
     };
 
     const handlePointerDown = (e: PointerEvent) => {
       if (e.pointerType === 'touch' || e.button !== 0) return;
-      setIsMouseDown(true);
-      selectionStartX.set(e.clientX);
-      selectionStartY.set(e.clientY);
+      isMouseDown = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      updateCursor();
     };
 
     const handlePointerUp = () => {
-      setIsMouseDown(false);
-      setIsSelectionActive(false);
+      isMouseDown = false;
+      isSelecting = false;
+      updateCursor();
     };
 
     const handleMouseLeave = () => {
-      setIsVisible(false);
-      setIsMouseDown(false);
-      setIsSelectionActive(false);
+      isVisible = false;
+      isMouseDown = false;
+      isSelecting = false;
+      updateCursor();
     };
 
     const handleMouseEnter = () => {
-      setIsVisible(true);
+      isVisible = true;
+      updateCursor();
     };
 
-    window.addEventListener('pointermove', handlePointerMove);
-    window.addEventListener('pointerdown', handlePointerDown);
-    window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('pointermove', handlePointerMove, { passive: true });
+    window.addEventListener('pointerdown', handlePointerDown, { passive: true });
+    window.addEventListener('pointerup', handlePointerUp, { passive: true });
     document.addEventListener('mouseleave', handleMouseLeave);
     document.addEventListener('mouseenter', handleMouseEnter);
 
     return () => {
+      if (rafId) cancelAnimationFrame(rafId);
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerdown', handlePointerDown);
       window.removeEventListener('pointerup', handlePointerUp);
       document.removeEventListener('mouseleave', handleMouseLeave);
       document.removeEventListener('mouseenter', handleMouseEnter);
     };
-  }, [isTouch, isVisible, isMouseDown]);
-
-  // Selection box transforms
-  const selectionWidth = useTransform([mouseX, selectionStartX], ([x, sx]: number[]) => Math.abs(x - sx));
-  const selectionHeight = useTransform([mouseY, selectionStartY], ([y, sy]: number[]) => Math.abs(y - sy));
-  const selectionLeft = useTransform([mouseX, selectionStartX], ([x, sx]: number[]) => (x < sx ? x : sx));
-  const selectionTop = useTransform([mouseY, selectionStartY], ([y, sy]: number[]) => (y < sy ? y : sy));
-
-  // AutoCAD Green (Crossing / Drag Left) vs Blue (Window / Drag Right) selection box colors
-  const selectionBg = useTransform([mouseX, selectionStartX], ([x, sx]: number[]) =>
-    x < sx ? 'rgba(34, 197, 94, 0.18)' : 'rgba(59, 130, 246, 0.18)'
-  );
-  const selectionBorder = useTransform([mouseX, selectionStartX], ([x, sx]: number[]) =>
-    x < sx ? '1.5px dashed rgba(34, 197, 94, 0.9)' : '1.5px solid rgba(59, 130, 246, 0.9)'
-  );
-
-  const cursorBaseColor = 'hsl(var(--color-cursor, 0 0% 100%))';
-
-  if (isTouch || !isVisible) return null;
+  }, []);
 
   return (
     <div id="autocad-cursor-root" className="fixed inset-0 pointer-events-none z-[999999] overflow-hidden select-none">
       {/* AutoCAD Visual Selection Box */}
-      {isSelectionActive && (
-        <motion.div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            x: selectionLeft,
-            y: selectionTop,
-            width: selectionWidth,
-            height: selectionHeight,
-            backgroundColor: selectionBg,
-            border: selectionBorder,
-            pointerEvents: 'none',
-            zIndex: 999998,
-          }}
-        />
-      )}
-
-      {/* AutoCAD Crosshair Cursor */}
-      <motion.div
+      <div
+        ref={selectionRef}
         style={{
           position: 'fixed',
           top: 0,
           left: 0,
-          x: mouseX,
-          y: mouseY,
-          translateX: '-50%',
-          translateY: '-50%',
-          scale: isMouseDown ? 0.85 : 1,
+          display: 'none',
+          pointerEvents: 'none',
+          zIndex: 999998,
         }}
-        className="pointer-events-none"
+      />
+
+      {/* AutoCAD Crosshair Cursor */}
+      <div
+        ref={cursorRef}
+        className="autocad-crosshair-wrap"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          opacity: 0,
+          pointerEvents: 'none',
+          willChange: 'transform',
+          transition: 'transform 0.05s ease-out',
+        }}
       >
         <div className="relative w-32 h-32 flex items-center justify-center pointer-events-none">
           {/* Central Pick Box */}
-          <motion.div
-            className="absolute border-2 transition-colors duration-150 pointer-events-none"
+          <div
+            className="autocad-box absolute border-2 transition-colors duration-150 pointer-events-none"
             style={{
               width: 12,
               height: 12,
-              borderColor: isHovering ? 'hsl(var(--accent))' : cursorBaseColor,
-              backgroundColor: isHovering ? 'hsl(var(--accent) / 0.15)' : 'transparent',
             }}
           />
 
           {/* Top Line */}
-          <motion.div
-            className="absolute w-[1.5px] transition-colors duration-150 pointer-events-none"
+          <div
+            className="autocad-line absolute w-[1.5px] transition-colors duration-150 pointer-events-none"
             style={{
               bottom: 'calc(50% + 6px)',
               height: 40,
-              backgroundColor: isHovering ? 'hsl(var(--accent))' : cursorBaseColor,
             }}
           />
           {/* Bottom Line */}
-          <motion.div
-            className="absolute w-[1.5px] transition-colors duration-150 pointer-events-none"
+          <div
+            className="autocad-line absolute w-[1.5px] transition-colors duration-150 pointer-events-none"
             style={{
               top: 'calc(50% + 6px)',
               height: 40,
-              backgroundColor: isHovering ? 'hsl(var(--accent))' : cursorBaseColor,
             }}
           />
           {/* Left Line */}
-          <motion.div
-            className="absolute h-[1.5px] transition-colors duration-150 pointer-events-none"
+          <div
+            className="autocad-line absolute h-[1.5px] transition-colors duration-150 pointer-events-none"
             style={{
               right: 'calc(50% + 6px)',
               width: 40,
-              backgroundColor: isHovering ? 'hsl(var(--accent))' : cursorBaseColor,
             }}
           />
           {/* Right Line */}
-          <motion.div
-            className="absolute h-[1.5px] transition-colors duration-150 pointer-events-none"
+          <div
+            className="autocad-line absolute h-[1.5px] transition-colors duration-150 pointer-events-none"
             style={{
               left: 'calc(50% + 6px)',
               width: 40,
-              backgroundColor: isHovering ? 'hsl(var(--accent))' : cursorBaseColor,
             }}
           />
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 };

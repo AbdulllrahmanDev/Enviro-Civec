@@ -94,20 +94,28 @@ export default function MetroHero({
       if (pendingTime !== null) {
         const t = pendingTime;
         pendingTime = null;
-        isSeeking = true;
-        video.currentTime = t;
+        seekTo(t);
       }
     };
     video.addEventListener("seeked", onSeeked);
 
     function seekTo(t: number) {
-      if (!video) return;
+      if (!video || !Number.isFinite(t) || duration <= 0) return;
+      if (Math.abs(video.currentTime - t) < 0.03) return;
       if (isSeeking) {
         pendingTime = t;
         return;
       }
       isSeeking = true;
-      video.currentTime = t;
+      try {
+        if ("fastSeek" in video && typeof (video as any).fastSeek === "function") {
+          (video as any).fastSeek(t);
+        } else {
+          video.currentTime = t;
+        }
+      } catch {
+        video.currentTime = t;
+      }
     }
 
     function engageLock() {

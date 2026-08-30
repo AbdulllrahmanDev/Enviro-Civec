@@ -191,12 +191,14 @@
   background-repeat: no-repeat;
 }
 
-/* Hide side/vertical scrollbars globally */
-html, body {
+/* Hide side/vertical scrollbars globally on all elements */
+html, body, *, *::before, *::after {
   -ms-overflow-style: none !important; /* IE and Edge */
-  scrollbar-width: none !important; /* Firefox */
+  scrollbar-width: none !important; /* Firefox & modern browsers */
 }
 
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
 *::-webkit-scrollbar,
 ::-webkit-scrollbar {
   display: none !important;
@@ -204,3 +206,24 @@ html, body {
   height: 0px !important;
   background: transparent !important;
 }
+
+/* AutoCAD Cursor Global Hover Styling */
+.autocad-box {
+  border-color: hsl(var(--color-cursor, 0 0% 100%));
+  background-color: transparent;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.autocad-line {
+  background-color: hsl(var(--color-cursor, 0 0% 100%));
+  transition: background-color 0.15s ease;
+}
+
+.cursor-hovering .autocad-box {
+  border-color: hsl(var(--accent)) !important;
+  background-color: hsl(var(--accent) / 0.2) !important;
+}
+
+.cursor-hovering .autocad-line {
+  background-color: hsl(var(--accent)) !important;
+}
