@@ -118,12 +118,13 @@ export default function MetroHero({
     }
 
     function releaseLock() {
-      if (!locked || typeof document === "undefined") return;
       locked = false;
-      document.body.style.overflow = "";
+      if (typeof document !== "undefined") {
+        document.body.style.overflow = "";
+      }
     }
 
-    // Start with lock active when at the top of the page
+    // Start with lock active only when at the very top of the page
     if (window.scrollY < 10) {
       engageLock();
     }
@@ -153,7 +154,19 @@ export default function MetroHero({
       return true;
     }
 
+    const onUnlockEvent = () => {
+      targetProgress = 1;
+      currentProgress = 1;
+      releaseLock();
+    };
+
     const onWheel = (e: WheelEvent) => {
+      if (window.scrollY > 15) {
+        if (locked) {
+          releaseLock();
+        }
+        return;
+      }
       if (locked) {
         const handled = addDelta(e.deltaY);
         if (handled) {
@@ -169,6 +182,12 @@ export default function MetroHero({
     };
 
     const onTouchMove = (e: TouchEvent) => {
+      if (window.scrollY > 15) {
+        if (locked) {
+          releaseLock();
+        }
+        return;
+      }
       if (!locked && window.scrollY > 5) return;
       const y = e.touches[0]?.clientY ?? touchStartY;
       const deltaY = touchStartY - y;
@@ -180,11 +199,15 @@ export default function MetroHero({
     };
 
     const handleWindowScroll = () => {
-      if (!locked && window.scrollY <= 2 && targetProgress >= 0.99) {
-        // User scrolled back to top
+      if (window.scrollY > 15) {
+        if (locked) {
+          releaseLock();
+        }
+        targetProgress = 1;
       }
     };
 
+    window.addEventListener("unlock-scroll-hero", onUnlockEvent);
     window.addEventListener("wheel", onWheel, { passive: false });
     window.addEventListener("touchstart", onTouchStart, { passive: true });
     window.addEventListener("touchmove", onTouchMove, { passive: false });
@@ -235,12 +258,15 @@ export default function MetroHero({
     return () => {
       video.removeEventListener("loadeddata", onLoadedData);
       video.removeEventListener("seeked", onSeeked);
+      window.removeEventListener("unlock-scroll-hero", onUnlockEvent);
       window.removeEventListener("wheel", onWheel);
       window.removeEventListener("touchstart", onTouchStart);
       window.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("scroll", handleWindowScroll);
       cancelAnimationFrame(rafId);
-      releaseLock();
+      if (typeof document !== "undefined") {
+        document.body.style.overflow = "";
+      }
     };
   }, [scrubDistance]);
 

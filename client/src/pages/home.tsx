@@ -160,9 +160,13 @@ export default function Home() {
   }, []);
 
   const scrollToSection = (id: string) => {
+    document.body.style.overflow = "";
+    window.dispatchEvent(new CustomEvent("unlock-scroll-hero"));
     const element = document.getElementById(id);
     if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "start" });
+      requestAnimationFrame(() => {
+        element.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
     }
   };
 
