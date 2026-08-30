@@ -145,23 +145,22 @@
 /* Geometric pattern inspired by the logo */
 .geometric-pattern {
   background-image:
-    linear-gradient(135deg, transparent 40%, hsl(var(--brand-gray) / 0.03) 40%, hsl(var(--brand-gray) / 0.03) 60%, transparent 60%),
-    linear-gradient(225deg, transparent 40%, hsl(var(--brand-brown) / 0.03) 40%, hsl(var(--brand-brown) / 0.03) 60%, transparent 60%);
+    linear-gradient(135deg, transparent 40%, hsl(var(--brand-gray) / 0.02) 40%, hsl(var(--brand-gray) / 0.02) 60%, transparent 60%),
+    linear-gradient(225deg, transparent 40%, hsl(var(--brand-brown) / 0.02) 40%, hsl(var(--brand-brown) / 0.02) 60%, transparent 60%);
   background-size: 60px 60px;
 }
 
-/* Infrastructure grid pattern */
-.grid-pattern {
-  background-image:
-    linear-gradient(hsl(var(--brand-gray) / 0.15) 1px, transparent 1px),
-    linear-gradient(90deg, hsl(var(--brand-gray) / 0.15) 1px, transparent 1px);
-  background-size: 40px 40px;
+/* 3D Perspective & Depth Utilities */
+.perspective-1000 {
+  perspective: 1000px;
 }
 
-.dark .grid-pattern {
-  background-image:
-    linear-gradient(hsl(var(--brand-gray) / 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, hsl(var(--brand-gray) / 0.05) 1px, transparent 1px);
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
 }
 
 /* Topographic contour effect */
@@ -176,4 +175,36 @@
       hsl(var(--brand-brown) / 0.03) 41px,
       hsl(var(--brand-brown) / 0.03) 42px);
   pointer-events: none;
+}
+
+/* Technical Ruler Markings Effect */
+.ruler-border-b {
+  background-image: repeating-linear-gradient(
+    90deg,
+    hsl(var(--border)),
+    hsl(var(--border)) 1px,
+    transparent 1px,
+    transparent 10px
+  );
+  background-size: 100% 4px;
+  background-position: bottom;
+  background-repeat: no-repeat;
+}
+
+/* Smooth Technical Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--accent));
 }

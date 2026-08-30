@@ -1,33 +1,33 @@
 import type React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "wouter";
-import { motion } from "framer-motion";
+import { motion, useScroll, useSpring, type Variants } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   ArrowRight,
   Building2,
   Leaf,
-  Compass,
   ShieldCheck,
   Award,
-  Users,
   Phone,
   Mail,
   MapPin,
-  ChevronRight,
   CheckCircle2,
   Truck,
   Waves,
   Mountain,
   Quote,
   Star,
-  Calendar,
-  MapPinned,
+  Layers,
+  Activity,
+  Cpu,
+  FileCheck2,
   Loader2,
   Moon,
   Sun,
   ArrowUp,
-  Globe
+  Globe,
+  DraftingCompass
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/components/theme-provider";
@@ -44,50 +44,53 @@ import logo from "@assets/Enviro_Civec.png";
 import heroImage from "@assets/generated_images/infrastructure_engineering_hero_background.png";
 import patternImage from "@assets/generated_images/civil_engineering_blueprint_abstract.png";
 
+// Icon mapping for services
 const iconMap: Record<string, React.ReactNode> = {
-  Building2: <Building2 className="w-7 h-7 text-accent" />,
-  Waves: <Waves className="w-7 h-7 text-accent" />,
-  Truck: <Truck className="w-7 h-7 text-accent" />,
-  ShieldCheck: <ShieldCheck className="w-7 h-7 text-accent" />,
-  Leaf: <Leaf className="w-7 h-7 text-accent" />,
-  Mountain: <Mountain className="w-7 h-7 text-accent" />,
+  Building2: <Building2 className="w-6 h-6 text-accent" />,
+  Waves: <Waves className="w-6 h-6 text-accent" />,
+  Truck: <Truck className="w-6 h-6 text-accent" />,
+  ShieldCheck: <ShieldCheck className="w-6 h-6 text-accent" />,
+  Leaf: <Leaf className="w-6 h-6 text-accent" />,
+  Mountain: <Mountain className="w-6 h-6 text-accent" />,
+  Layers: <Layers className="w-6 h-6 text-accent" />,
+};
+
+// Subtle animation variants
+const fadeInUp: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: "easeOut" }
+  }
+};
+
+const staggerContainer: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.05
+    }
+  }
 };
 
 export default function Home() {
   const { t, language, setLanguage, dir } = useTranslation();
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
+
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const [hoveredTab, setHoveredTab] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
-  const navLinks = [
-    { id: 'about', label: t('nav.about') },
-    { id: 'services', label: t('nav.services') },
-    { id: 'projects', label: t('nav.projects') },
-    { id: 'testimonials', label: t('nav.testimonials') },
-    { id: 'contact', label: t('nav.contact') },
-  ];
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setShowScrollTop(window.scrollY > 400);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  };
-
-  // ... (rest of component)
+  // Scroll Progress indicator
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001
+  });
 
   // Form state
   const [formData, setFormData] = useState<ContactFormData>({
@@ -96,6 +99,7 @@ export default function Home() {
     phone: "",
     service: "",
     message: "",
+    bot_trap: "",
   });
 
   // API Queries
@@ -105,8 +109,8 @@ export default function Home() {
   });
 
   const { data: projects = [] } = useQuery({
-    queryKey: ["projects", "featured"],
-    queryFn: () => fetchProjects(true),
+    queryKey: ["projects"],
+    queryFn: () => fetchProjects(false),
   });
 
   const { data: testimonials = [] } = useQuery({
@@ -122,17 +126,17 @@ export default function Home() {
   // Contact form mutation
   const contactMutation = useMutation({
     mutationFn: submitContactForm,
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
-        title: t('contact.toast.success.title'),
-        description: t('contact.toast.success.desc'),
+        title: language === "ar" ? "تم إرسال طلبك بنجاح" : "Inquiry Sent Successfully",
+        description: data.message || (language === "ar" ? "شكراً لتواصلك معنا، سيتواصل معك أحد مستشارينا الهندسيين في أقرب وقت." : "Thank you for contacting us. Our engineering consultants will be in touch shortly."),
       });
-      setFormData({ name: "", email: "", phone: "", service: "", message: "" });
+      setFormData({ name: "", email: "", phone: "", service: "", message: "", bot_trap: "" });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
-        title: t('contact.toast.error.title'),
-        description: error.message || t('contact.toast.error.desc'),
+        title: language === "ar" ? "تعذر إرسال الطلب" : "Submission Failed",
+        description: error.message || (language === "ar" ? "يرجى التحقق من الحقول والمحاولة مجدداً." : "Please check your inputs and try again."),
         variant: "destructive",
       });
     },
@@ -143,672 +147,903 @@ export default function Home() {
     contactMutation.mutate(formData);
   };
 
-  // Fallback stats if database is empty
-  const displayStats = stats.length > 0 ? stats : [
-    { id: "1", label: "Infrastructure Projects", value: "500+", order: 1 },
-    { id: "2", label: "Expert Engineers", value: "200+", order: 2 },
-    { id: "3", label: "Years of Excellence", value: "30+", order: 3 },
-    { id: "4", label: "Client Satisfaction", value: "98%", order: 4 }
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 400);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const scrollToSection = (id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  // Filter projects by category
+  const categories = useMemo(() => {
+    const cats = new Set(projects.map((p) => p.category));
+    return ["all", ...Array.from(cats)];
+  }, [projects]);
+
+  const filteredProjects = useMemo(() => {
+    if (selectedCategory === "all") return projects;
+    return projects.filter((p) => p.category === selectedCategory);
+  }, [projects, selectedCategory]);
+
+  const navLinks = [
+    { id: "about", label: t("nav.about") },
+    { id: "services", label: t("nav.services") },
+    { id: "methodology", label: language === "ar" ? "منهجية العمل" : "Methodology" },
+    { id: "projects", label: t("nav.projects") },
+    { id: "testimonials", label: t("nav.testimonials") },
+    { id: "contact", label: t("nav.contact") },
+  ];
+
+  // Engineering methodology steps
+  const methodologySteps = [
+    {
+      num: "01",
+      icon: <DraftingCompass className="w-6 h-6 text-accent" />,
+      title: language === "ar" ? "المسح والدراسات الجيوتقنية" : "Topographical & Geotechnical Survey",
+      desc: language === "ar" ? "فحص طبقات التربة، الدراسات الهيدرولوجية، والمسح الطبوغرافي الشامل لتأسيس قاعدة بيانات دقيقة." : "Soil investigation, hydrological modelling, and comprehensive site surveying for exact baseline data."
+    },
+    {
+      num: "02",
+      icon: <Cpu className="w-6 h-6 text-accent" />,
+      title: language === "ar" ? "النمذجة الرقمية وتكامل BIM" : "Advanced BIM & Digital Modeling",
+      desc: language === "ar" ? "محاكاة ثلاثية الأبعاد متقدمة لكافة شبكات البنية التحتية والمباني لضمان دقة التنفيذ ومنع التعارضات." : "Multi-discipline 3D BIM integration and digital twin simulation to eliminate clashes and optimize material efficiency."
+    },
+    {
+      num: "03",
+      icon: <Activity className="w-6 h-6 text-accent" />,
+      title: language === "ar" ? "تقييم الأثر البيئي والاستدامة" : "Environmental Impact & Sustainability",
+      desc: language === "ar" ? "دراسات معتمدة للحفاظ على الموارد، إدارة تصريف السيول، وتقليل الانبعاثات الكربونية في كل مشروع." : "Rigorous EIA studies, stormwater mitigation strategies, and ecological preservation compliance."
+    },
+    {
+      num: "04",
+      icon: <FileCheck2 className="w-6 h-6 text-accent" />,
+      title: language === "ar" ? "الإشراف الهندسي وضمان الجودة" : "Supervision & Quality Assurance",
+      desc: language === "ar" ? "متابعة دقيقة لمطابقة المواصفات القياسية الدولية ومعايير ISO 9001:2015 في كافة مراحل التنفيذ." : "On-site quality compliance, materials testing supervision, and ISO-certified structural verification."
+    }
   ];
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border shadow-sm transition-colors duration-300">
+    <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden selection:bg-accent/20">
+      {/* Top Architectural Reading Progress Bar */}
+      <motion.div
+        className="fixed top-0 left-0 right-0 h-[3px] bg-accent z-50 origin-left"
+        style={{ scaleX }}
+      />
+
+      {/* Navigation Header */}
+      <header className="fixed top-0 left-0 right-0 z-40 bg-background/90 backdrop-blur-md border-b border-border transition-all duration-200">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex flex-col items-center justify-center -space-y-1">
-            <img src={logo} alt="Enviro-Civec Logo" className="h-14 w-auto" />
-            <span className={`font-serif font-bold tracking-wide uppercase text-foreground ${dir === 'rtl' ? 'text-xl' : 'text-sm tracking-widest'}`}>
-              {t('brandName')}
-            </span>
-          </div>
+          {/* Logo & Brand */}
+          <Link href="/" className="flex items-center gap-3 group cursor-pointer">
+            <img
+              src={logo}
+              alt="Enviro Civec Logo"
+              className="h-10 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+            />
+            <div className="flex flex-col">
+              <span className="font-serif text-lg font-bold tracking-tight text-foreground">
+                {t("brandName")}
+              </span>
+              <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
+                {language === "ar" ? "استشارات هندسية وبيئية" : "Engineering Consultants"}
+              </span>
+            </div>
+          </Link>
 
-          <div className="hidden lg:flex items-center gap-2 text-sm font-medium text-muted-foreground">
+          {/* Desktop Navigation Links */}
+          <nav className="hidden lg:flex items-center gap-7">
             {navLinks.map((link) => (
-              <a
+              <button
                 key={link.id}
-                href={`#${link.id}`}
-                onMouseEnter={() => setHoveredTab(link.id)}
-                onMouseLeave={() => setHoveredTab(null)}
-                className="relative px-4 py-2 transition-colors hover:text-primary z-10"
+                onClick={() => scrollToSection(link.id)}
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-150 relative py-1 cursor-pointer"
               >
-                {hoveredTab === link.id && (
-                  <motion.span
-                    layoutId="nav-pill"
-                    className="absolute inset-0 bg-accent/10 rounded-full -z-10"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                  />
-                )}
                 {link.label}
-              </a>
+              </button>
             ))}
-          </div>
+          </nav>
 
-          <div className="flex items-center gap-4">
+          {/* Action Controls: Language, Theme, Consultation CTA */}
+          <div className="flex items-center gap-3">
+            {/* Language Switch */}
             <button
-              onClick={() => setLanguage(language === "en" ? "ar" : "en")}
-              className="p-2 rounded-full hover:bg-accent/10 transition-colors flex items-center gap-1"
+              onClick={() => setLanguage(language === "ar" ? "en" : "ar")}
+              className="px-3 py-1.5 rounded-lg border border-border text-xs font-semibold hover:bg-muted transition-colors flex items-center gap-1.5 cursor-pointer"
+              title="Change Language"
               aria-label="Toggle language"
             >
-              <Globe className="h-5 w-5 text-foreground" />
-              <span className="text-xs font-bold text-foreground">{language === "en" ? "عربي" : "EN"}</span>
+              <Globe className="w-3.5 h-3.5 text-muted-foreground" />
+              <span>{language === "ar" ? "English" : "العربية"}</span>
             </button>
 
+            {/* Theme Switch */}
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="p-2 rounded-full hover:bg-accent/10 transition-colors"
+              className="p-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+              title="Toggle Theme"
               aria-label="Toggle theme"
             >
-              {theme === "dark" ? (
-                <Sun className="h-5 w-5 text-foreground" />
-              ) : (
-                <Moon className="h-5 w-5 text-foreground" />
-              )}
+              {theme === "dark" ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
             </button>
 
+            {/* Inquire CTA */}
             <button
-              data-testid="button-consultation"
-              className="flex items-center gap-2 bg-accent text-white px-5 py-2.5 rounded-lg font-medium text-sm hover:bg-accent/90 transition-all shadow-lg hover:shadow-xl active:scale-95 cursor-pointer"
-              type="button"
               onClick={() => scrollToSection("contact")}
+              className="hidden sm:inline-flex items-center gap-2 bg-accent text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-accent/90 transition-all active:scale-95 shadow-sm cursor-pointer"
             >
-              {t('nav.consultation')}
-              {dir === 'ltr' ? <ArrowRight className="w-4 h-4" /> : <ArrowRight className="w-4 h-4 rotate-180" />}
+              <span>{t("nav.consultation")}</span>
+              {dir === "ltr" ? <ArrowRight className="w-4 h-4" /> : <ArrowRight className="w-4 h-4 rotate-180" />}
             </button>
           </div>
         </div>
-      </nav>
+      </header>
 
-      {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center pt-20 overflow-hidden">
-        {/* Background Image with Overlay */}
-        <div className="absolute inset-0 z-0">
-          <img
-            src={heroImage}
-            alt="Infrastructure Engineering"
-            className="w-full h-full object-cover"
-            loading="eager"
-            fetchPriority="high"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/30" />
-        </div>
-
-        {/* Geometric accent inspired by logo */}
-        <div className="absolute top-0 right-0 w-1/3 h-full z-[1] opacity-20">
-          <div className="absolute top-0 right-0 w-full h-1/3 bg-gradient-to-bl from-gray-400/30 to-transparent" />
-          <div className="absolute top-1/4 right-0 w-full h-1/3 bg-gradient-to-bl from-[#8B7355]/40 to-transparent" />
-          <div className="absolute top-1/2 right-0 w-full h-1/2 bg-gradient-to-bl from-red-600/30 to-transparent" />
-        </div>
-
-        <div className="relative z-10 max-w-7xl mx-auto px-6 py-24 grid lg:grid-cols-2 gap-16 items-center">
-          <motion.div
-            initial={{ opacity: 0, x: -40 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-          >
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white/90 text-xs font-semibold tracking-wider uppercase mb-8">
-              <Award className="w-4 h-4 text-accent" />
-              {t('hero.badge')}
-            </div>
-
-            <h1 className="font-serif text-4xl md:text-6xl lg:text-7xl font-bold text-white leading-[1.1] mb-6">
-              {t('hero.title_line1')} <br />
-              <span className="text-accent">{t('hero.title_line2')}</span><br />
-              {t('hero.title_line3')}
-            </h1>
-
-            <p className="text-lg md:text-xl text-white/80 leading-relaxed mb-10 max-w-lg">
-              {t('hero.description')}
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4">
-              <a
-                href="#services"
-                data-testid="button-explore-services"
-                className="cursor-pointer flex items-center justify-center gap-2 bg-accent text-white px-8 py-4 rounded-lg font-semibold hover:bg-accent/90 transition-all shadow-xl hover:shadow-2xl active:scale-95"
-              >
-                {t('nav.exploreServices')}
-                {dir === 'ltr' ? <ArrowRight className="w-4 h-4" /> : <ArrowRight className="w-4 h-4 rotate-180" />}
-              </a>
-              <a
-                href="#projects"
-                data-testid="button-view-projects"
-                className="cursor-pointer flex items-center justify-center gap-2 bg-white/10 backdrop-blur-sm border border-white/30 text-white px-8 py-4 rounded-lg font-semibold hover:bg-white/20 transition-all"
-              >
-                {t('nav.viewProjects')}
-              </a>
-            </div>
-
-            {/* Trust Indicators */}
-            <div className="mt-16 grid grid-cols-3 gap-8">
-              {displayStats.slice(0, 3).map((stat, i) => (
-                <div key={stat.id || i} className="text-center">
-                  <div className="text-3xl md:text-4xl font-bold text-white font-serif">{stat.value}</div>
-                  <div className="text-xs text-white/60 uppercase tracking-wider mt-1">{t('hero.stats')[stat.label] || stat.label}</div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Scroll Indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/50 z-10">
-          <span className="text-xs uppercase tracking-widest">{t('hero.scroll')}</span>
-          <div className="w-px h-8 bg-gradient-to-b from-white/50 to-transparent" />
-        </div>
-      </section>
-
-      {/* About Section */}
-      <section id="about" className="py-24 px-6 bg-background relative grid-pattern">
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div>
-              <div className="text-xs uppercase tracking-[0.3em] text-accent font-semibold mb-4">{t('about.subtitle')}</div>
-              <h2 className="font-serif text-3xl md:text-5xl font-bold text-foreground mb-6 leading-tight">
-                {t('about.title_line1')}<br />
-                <span className="text-primary">{t('about.title_line2')}</span>
-              </h2>
-              <p className="text-muted-foreground text-lg leading-relaxed mb-8">
-                {t('about.description')}
-              </p>
-
-              <ul className="space-y-4 mb-8">
-                {(t('about.points') as string[]).map((item: string, i: number) => (
-                  <li key={i} className="flex items-start gap-3 text-foreground">
-                    <CheckCircle2 className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <a href="#services" className="inline-flex items-center gap-2 text-accent font-semibold hover:gap-3 transition-all">
-                {t('about.discover')} {dir === 'ltr' ? <ChevronRight className="w-4 h-4" /> : <ChevronRight className="w-4 h-4 rotate-180" />}
-              </a>
-            </div>
-
-            <div className="relative">
-              <div className="bg-gradient-to-br from-muted/50 to-muted/10 rounded-3xl p-8 lg:p-12 border border-border">
-                <div className="grid grid-cols-2 gap-6">
-                  {[
-                    { icon: <Building2 className="w-8 h-8" />, title: t('about.cards.civil.title'), desc: t('about.cards.civil.desc'), color: "text-accent" },
-                    { icon: <Leaf className="w-8 h-8" />, title: t('about.cards.env.title'), desc: t('about.cards.env.desc'), color: "text-accent" },
-                    { icon: <Waves className="w-8 h-8" />, title: t('about.cards.water.title'), desc: t('about.cards.water.desc'), color: "text-accent" },
-                    { icon: <Mountain className="w-8 h-8" />, title: t('about.cards.geo.title'), desc: t('about.cards.geo.desc'), color: "text-accent" }
-                  ].map((item, i) => (
-                    <div key={i} className="bg-card p-6 rounded-2xl shadow-sm hover:shadow-lg transition-all border border-border group cursor-pointer">
-                      <div className={`${item.color} mb-3 group-hover:scale-110 transition-transform`}>{item.icon}</div>
-                      <h4 className="font-semibold text-foreground mb-1">{item.title}</h4>
-                      <p className="text-sm text-muted-foreground">{item.desc}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Floating Badge with brand colors */}
-              <div className="absolute -bottom-6 -left-6 bg-gradient-to-br from-primary to-primary/80 text-white p-6 rounded-2xl shadow-xl">
-                <div className="text-4xl font-serif font-bold">30+</div>
-                <div className="text-sm text-white/80">{t('about.years_badge')}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Infrastructure Services Section - Now from Database */}
-      <section id="services" className="py-24 px-6 bg-muted/30 grid-pattern">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <div className="text-xs uppercase tracking-[0.3em] text-accent font-semibold mb-4">{t('services.subtitle')}</div>
-            <h2 className="font-serif text-3xl md:text-5xl font-bold text-foreground mb-4">
-              {t('services.title')}
-            </h2>
-            <p className="text-muted-foreground text-lg">
-              {t('services.description')}
-            </p>
+      {/* Main Content */}
+      <main className="pt-20">
+        {/* ================= HERO SECTION WITH FULL BACKGROUND IMAGE ================= */}
+        <section className="relative min-h-[85vh] flex items-center py-24 px-6 overflow-hidden border-b border-border">
+          {/* Full Hero Background Image with Lightened, Clear Overlay */}
+          <div className="absolute inset-0 z-0">
+            <img
+              src={heroImage}
+              alt="Engineering Infrastructure Background"
+              className="w-full h-full object-cover object-center"
+            />
+            {/* Very light transparent wash so the background image is clearly visible */}
+            <div className="absolute inset-0 bg-gradient-to-r from-background/70 via-background/40 to-transparent dark:from-background/80 dark:via-background/50 dark:to-background/20" />
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {services.map((service, idx) => {
-              const translation = t('services.items')?.[service.title] || {};
-              const title = translation.title || service.title;
-              const description = translation.description || service.description;
-              const features = translation.features || service.features;
+          <div className="max-w-7xl mx-auto w-full relative z-10">
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={staggerContainer}
+              className="max-w-3xl flex flex-col items-start"
+            >
+              {/* Master Headline */}
+              <motion.h1
+                variants={fadeInUp}
+                className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground leading-[1.18] mb-6"
+              >
+                {t("hero.title_line1")}{" "}
+                <span className="text-accent underline decoration-border/60 underline-offset-8">
+                  {t("hero.title_line2")}
+                </span>{" "}
+                {t("hero.title_line3")}
+              </motion.h1>
 
-              return (
-                <motion.div
-                  key={service.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: idx * 0.1 }}
-                  className="bg-card p-8 rounded-2xl border border-border hover:border-primary/20 hover:shadow-xl transition-all group cursor-pointer"
-                  data-testid={`service-card-${service.id}`}
+              {/* Description */}
+              <motion.p
+                variants={fadeInUp}
+                className="text-base sm:text-lg text-foreground/90 font-medium leading-relaxed max-w-2xl mb-8 drop-shadow-sm"
+              >
+                {t("hero.description")}
+              </motion.p>
+
+              {/* Dual Action Buttons */}
+              <motion.div variants={fadeInUp} className="flex flex-wrap items-center gap-4 w-full sm:w-auto">
+                <button
+                  onClick={() => scrollToSection("contact")}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-accent text-white px-7 py-3.5 rounded-lg text-base font-semibold hover:bg-accent/90 transition-all shadow-md active:scale-95 cursor-pointer"
                 >
-                  <div className="w-14 h-14 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-accent/20 group-hover:border-accent/40 transition-all duration-300">
-                    {iconMap[service.icon] || <Building2 className="w-7 h-7" />}
-                  </div>
-                  <h3 className="font-serif text-xl font-bold text-foreground mb-3">{title}</h3>
-                  <p className="text-muted-foreground leading-relaxed mb-4">{description}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {features.map((f: string, i: number) => (
-                      <span key={i} className="text-xs bg-muted text-muted-foreground px-3 py-1 rounded-full">
-                        {f}
-                      </span>
-                    ))}
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
+                  <span>{t("nav.consultation")}</span>
+                  {dir === "ltr" ? <ArrowRight className="w-4 h-4" /> : <ArrowRight className="w-4 h-4 rotate-180" />}
+                </button>
 
-      {/* Featured Projects Section - From Database */}
-      <section id="projects" className="py-24 px-6 bg-background">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <div className="text-xs uppercase tracking-[0.3em] text-accent font-semibold mb-4">{t('projects.subtitle')}</div>
-            <h2 className="font-serif text-3xl md:text-5xl font-bold text-foreground mb-4">
-              {t('projects.title')}
-            </h2>
-            <p className="text-muted-foreground text-lg">
-              {t('projects.description')}
-            </p>
+                <button
+                  onClick={() => scrollToSection("projects")}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-card border border-border text-foreground px-6 py-3.5 rounded-lg text-base font-semibold hover:bg-muted transition-all active:scale-95 cursor-pointer"
+                >
+                  <span>{t("nav.viewProjects")}</span>
+                </button>
+              </motion.div>
+            </motion.div>
           </div>
+        </section>
 
-          <div className="grid md:grid-cols-2 gap-8">
-            {projects.map((project, idx) => (
+        {/* ================= METRICS & STATS BAR ================= */}
+        <section className="py-12 bg-card border-b border-border">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+              {stats.length > 0 ? (
+                stats.map((stat, idx) => (
+                  <motion.div
+                    key={stat.id || idx}
+                    initial={{ opacity: 0, y: 15 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.4, delay: idx * 0.08 }}
+                    className="flex flex-col items-center md:items-start text-center md:text-start"
+                  >
+                    <span className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-1 tracking-tight">
+                      {stat.value}
+                    </span>
+                    <span className="text-xs sm:text-sm text-muted-foreground font-medium">
+                      {t(`hero.stats.${stat.label}`) || stat.label}
+                    </span>
+                  </motion.div>
+                ))
+              ) : (
+                <>
+                  <div className="flex flex-col items-center md:items-start">
+                    <span className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-1">30+</span>
+                    <span className="text-xs sm:text-sm text-muted-foreground font-medium">{language === "ar" ? "عاماً من الخبرة والتميز" : "Years of Excellence"}</span>
+                  </div>
+                  <div className="flex flex-col items-center md:items-start">
+                    <span className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-1">250+</span>
+                    <span className="text-xs sm:text-sm text-muted-foreground font-medium">{language === "ar" ? "مشروع بنية تحتية منجز" : "Infrastructure Projects"}</span>
+                  </div>
+                  <div className="flex flex-col items-center md:items-start">
+                    <span className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-1">100%</span>
+                    <span className="text-xs sm:text-sm text-muted-foreground font-medium">{language === "ar" ? "مطابقة للمعايير الدولية" : "ISO Certified Quality"}</span>
+                  </div>
+                  <div className="flex flex-col items-center md:items-start">
+                    <span className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-1">45M m²</span>
+                    <span className="text-xs sm:text-sm text-muted-foreground font-medium">{language === "ar" ? "مساحة دراسات وتخطيط" : "Total Surveyed Area"}</span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* ================= ABOUT / FIRM IDENTITY SECTION ================= */}
+        <section id="about" className="py-24 px-6 bg-background relative overflow-hidden border-b border-border">
+          <div className="max-w-7xl mx-auto">
+            <div className="grid lg:grid-cols-12 gap-12 items-center">
+              {/* Left Visual Column */}
               <motion.div
-                key={project.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: idx * 0.1 }}
-                className="bg-card rounded-2xl overflow-hidden group cursor-pointer hover:shadow-xl transition-all border border-border"
-                data-testid={`project-card-${project.id}`}
+                transition={{ duration: 0.6 }}
+                className="lg:col-span-5"
               >
-                <div className="h-48 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent" />
-                  <div className="relative z-10">
-                    <Building2 className="w-16 h-16 text-primary/40" />
-                  </div>
-                  <div className="absolute top-4 right-4 bg-background/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-semibold text-primary">
-                    {t('projects.items')?.[project.title]?.category || project.category}
-                  </div>
-                </div>
-                <div className="p-6">
-                  <h3 className="font-serif text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
-                    {t('projects.items')?.[project.title]?.title || project.title}
-                  </h3>
-                  <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
-                    {t('projects.items')?.[project.title]?.description || project.description}
-                  </p>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <MapPinned className="w-4 h-4" />
-                      {t('projects.items')?.[project.title]?.location || project.location}
+                <div className="relative rounded-2xl overflow-hidden border border-border shadow-md bg-card">
+                  <img
+                    src={patternImage}
+                    alt="Civil Engineering Abstract"
+                    className="w-full h-80 sm:h-96 object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent flex flex-col justify-end p-8 text-white">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-accent text-white text-xs font-semibold mb-3 w-fit">
+                      <Award className="w-3.5 h-3.5" />
+                      <span>ISO 9001 & 14001</span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-4 h-4" />
-                      {project.year}
-                    </div>
+                    <h4 className="font-serif text-2xl font-bold mb-2 text-white">
+                      {language === "ar" ? "ثلاثة عقود من الريادة الهندسية" : "Three Decades of Engineering Leadership"}
+                    </h4>
+                    <p className="text-sm text-white/80 leading-relaxed">
+                      {language === "ar" ? "دمج الابتكار التكنولوجي مع حماية البيئة والتنمية المستدامة في الشرق الأوسط." : "Pioneering sustainable civil and environmental infrastructure solutions across the region."}
+                    </p>
                   </div>
-                  {project.clientName && (
-                    <div className="mt-4 pt-4 border-t border-border text-sm">
-                      <span className="text-muted-foreground">{t('projects.client')}</span>
-                      <span className="font-medium text-foreground">{t('projects.items')?.[project.title]?.clientName || project.clientName}</span>
-                    </div>
-                  )}
                 </div>
               </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* Stats Banner with brand colors */}
-      <section className="py-20 px-6 bg-gradient-to-r from-primary via-primary/90 to-accent relative overflow-hidden">
-        {/* Blueprint pattern overlay */}
-        <div className="absolute inset-0 opacity-10">
-          <img src={patternImage} alt="" className="w-full h-full object-cover" loading="lazy" />
-        </div>
+              {/* Right Content Column */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+                className="lg:col-span-7 flex flex-col items-start"
+              >
+                <span className="text-xs uppercase tracking-widest text-accent font-bold mb-3">
+                  {t("about.subtitle")}
+                </span>
 
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            {displayStats.map((stat, i) => (
-              <div key={stat.id || i}>
-                <div className="text-4xl md:text-5xl font-serif font-bold text-white mb-2">{stat.value}</div>
-                <div className="text-white/70 text-sm uppercase tracking-wider">{t('hero.stats')[stat.label] || stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+                <h2 className="font-serif text-3xl sm:text-4xl font-bold tracking-tight text-foreground mb-6">
+                  {t("about.title_line1")} {t("about.title_line2")}
+                </h2>
 
-      {/* Testimonials Section - From Database */}
-      <section id="testimonials" className="py-24 px-6 bg-muted/30">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <div className="text-xs uppercase tracking-[0.3em] text-accent font-semibold mb-4">{t('testimonials.subtitle')}</div>
-            <h2 className="font-serif text-3xl md:text-5xl font-bold text-foreground mb-4">
-              {t('testimonials.title')}
-            </h2>
-            <p className="text-muted-foreground text-lg">
-              {t('testimonials.description')}
-            </p>
-          </div>
+                <p className="text-base text-muted-foreground leading-relaxed mb-8">
+                  {t("about.description")}
+                </p>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, idx) => {
-              const translation = t('testimonials.items')?.[testimonial.clientName] || {};
-              const content = translation.content || testimonial.content;
-              const position = translation.position || testimonial.position;
-
-              return (
-                <motion.div
-                  key={testimonial.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: idx * 0.1 }}
-                  className="bg-card p-8 rounded-2xl shadow-sm hover:shadow-lg transition-all border border-border relative h-full flex flex-col"
-                  data-testid={`testimonial-card-${testimonial.id}`}
-                >
-                  <Quote className={`w-10 h-10 text-accent/20 absolute top-6 ${dir === 'rtl' ? 'left-6' : 'right-6'}`} />
-
-                  <div className="flex gap-1 mb-4">
-                    {Array.from({ length: testimonial.rating }).map((_, i) => (
-                      <Star key={i} className="w-4 h-4 text-amber-400 fill-amber-400" />
-                    ))}
-                  </div>
-
-                  <p className="text-muted-foreground leading-relaxed mb-6 italic flex-grow">
-                    "{content}"
-                  </p>
-
-                  <div className="flex items-center gap-4 mt-auto">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-lg">
-                      {testimonial.clientName.charAt(0)}
+                {/* Key Certified Points Grid */}
+                <div className="grid sm:grid-cols-2 gap-4 w-full mb-8">
+                  {((t("about.points") as string[]) || []).map((point, index) => (
+                    <div
+                      key={index}
+                      className="flex items-start gap-3 p-3.5 rounded-xl bg-card border border-border shadow-sm"
+                    >
+                      <CheckCircle2 className="w-5 h-5 text-accent shrink-0 mt-0.5" />
+                      <span className="text-sm font-medium text-foreground leading-snug">
+                        {point}
+                      </span>
                     </div>
-                    <div>
-                      <div className="font-semibold text-foreground">
-                        {t('testimonials.items')?.[testimonial.clientName]?.clientName || testimonial.clientName}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {position && `${position}, `}{testimonial.company}
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Why Choose Us */}
-      <section id="expertise" className="py-24 px-6 bg-background">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div className="order-2 lg:order-1 relative">
-              <div className="aspect-square bg-gradient-to-br from-muted/50 via-muted/30 to-background rounded-3xl overflow-hidden border border-border relative">
-                <img src={patternImage} alt="Engineering Pattern" className="w-full h-full object-cover opacity-40" loading="lazy" />
-
-                {/* Logo Shape Recreation */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="relative w-64 h-48">
-                    <div className="absolute left-0 bottom-0 w-16 h-32 bg-gradient-to-t from-gray-400 to-gray-300 transform skew-x-[-15deg]" />
-                    <div className="absolute left-12 bottom-0 w-24 h-40 bg-gradient-to-t from-primary to-primary/80 transform skew-x-[-10deg]" />
-                    <div className="absolute right-0 bottom-0 w-20 h-36 bg-gradient-to-t from-accent to-accent/80 transform skew-x-[15deg]" />
-                  </div>
+                  ))}
                 </div>
-              </div>
+
+                <button
+                  onClick={() => scrollToSection("services")}
+                  className="inline-flex items-center gap-2 text-accent font-semibold text-sm hover:underline cursor-pointer group"
+                >
+                  <span>{t("about.discover")}</span>
+                  {dir === "ltr" ? <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /> : <ArrowRight className="w-4 h-4 rotate-180 group-hover:-translate-x-1 transition-transform" />}
+                </button>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+        {/* ================= SERVICES / CAPABILITIES SECTION ================= */}
+        <section id="services" className="py-24 px-6 bg-card border-b border-border">
+          <div className="max-w-7xl mx-auto">
+            {/* Section Header */}
+            <div className="text-center max-w-3xl mx-auto mb-16">
+              <span className="text-xs uppercase tracking-widest text-accent font-bold mb-3 block">
+                {t("services.subtitle")}
+              </span>
+              <h2 className="font-serif text-3xl sm:text-4xl font-bold text-foreground tracking-tight mb-4">
+                {t("services.title")}
+              </h2>
+              <p className="text-base text-muted-foreground leading-relaxed">
+                {t("services.description")}
+              </p>
             </div>
 
-            <div className="order-1 lg:order-2">
-              <div className="text-xs uppercase tracking-[0.3em] text-accent font-semibold mb-4">{t('expertise.subtitle')}</div>
-              <h2 className="font-serif text-3xl md:text-4xl font-bold text-foreground mb-6 leading-tight">
-                {t('expertise.title_line1')}<br />
-                <span className="text-primary">{t('expertise.title_line2')}</span>
-              </h2>
-              <p className="text-muted-foreground text-lg mb-8">
-                {t('expertise.description')}
-              </p>
+            {/* Services Grid with Clean Architectural Cards */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {services.map((service, idx) => (
+                <motion.div
+                  key={service.id}
+                  initial={{ opacity: 0, y: 15 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: idx * 0.06 }}
+                  className="bg-background border border-border rounded-2xl p-7 flex flex-col justify-between h-full shadow-sm hover:border-accent/40 transition-colors"
+                >
+                  <div>
+                    {/* Service Icon Header */}
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="w-12 h-12 rounded-xl bg-muted/60 border border-border flex items-center justify-center text-accent">
+                        {iconMap[service.icon] || <Building2 className="w-6 h-6 text-accent" />}
+                      </div>
+                      <span className="text-xs font-mono font-bold text-muted-foreground/60">
+                        0{idx + 1}
+                      </span>
+                    </div>
 
-              <div className="space-y-6">
-                {(t('expertise.items') as any[]).map((item, i) => (
-                  <div key={i} className="flex gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
-                      <CheckCircle2 className="w-5 h-5 text-accent" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-foreground mb-1">{item.title}</h4>
-                      <p className="text-muted-foreground text-sm">{item.desc}</p>
-                    </div>
+                    {/* Title & Description */}
+                    <h3 className="font-serif text-xl font-bold text-foreground mb-3">
+                      {t(`services.items.${service.title}.title`) || service.title}
+                    </h3>
+
+                    <p className="text-sm text-muted-foreground leading-relaxed mb-6">
+                      {t(`services.items.${service.title}.description`) || service.description}
+                    </p>
                   </div>
+
+                  {/* Capabilities Checklist */}
+                  <div className="pt-4 border-t border-border/70 space-y-2">
+                    {service.features.map((feature, fIdx) => (
+                      <div key={fIdx} className="flex items-center gap-2 text-xs text-foreground/80 font-medium">
+                        <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+                        <span>{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ================= ENGINEERING METHODOLOGY (HOW WE WORK) ================= */}
+        <section id="methodology" className="py-24 px-6 bg-background border-b border-border">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center max-w-3xl mx-auto mb-16">
+              <span className="text-xs uppercase tracking-widest text-accent font-bold mb-3 block">
+                {language === "ar" ? "دقة التنفيذ المعماري" : "Methodology & Precision"}
+              </span>
+              <h2 className="font-serif text-3xl sm:text-4xl font-bold text-foreground tracking-tight mb-4">
+                {language === "ar" ? "منهجية الاستشارات الهندسية المتكاملة" : "Our Engineering Methodology"}
+              </h2>
+              <p className="text-base text-muted-foreground leading-relaxed">
+                {language === "ar" ? "نطبق معايير هندسية صارمة من الفحص الأولي وحتى التسليم النهائي لضمان سلامة واستدامة البنية التحتية." : "Applying strict international engineering protocols from preliminary survey to final quality handover."}
+              </p>
+            </div>
+
+            {/* 4-Step Process Grid */}
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {methodologySteps.map((step, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 15 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: index * 0.08 }}
+                  className="bg-card border border-border rounded-2xl p-6 relative flex flex-col justify-between shadow-sm hover:border-accent/40 transition-colors"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="p-2.5 rounded-xl bg-muted/60 border border-border text-accent">
+                        {step.icon}
+                      </div>
+                      <span className="font-mono text-xl font-bold text-muted-foreground/40">
+                        {step.num}
+                      </span>
+                    </div>
+
+                    <h3 className="font-serif text-lg font-bold text-foreground mb-2">
+                      {step.title}
+                    </h3>
+
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      {step.desc}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ================= FEATURED PROJECTS SHOWCASE ================= */}
+        <section id="projects" className="py-24 px-6 bg-card border-b border-border">
+          <div className="max-w-7xl mx-auto">
+            {/* Header & Filter Controls */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+              <div>
+                <span className="text-xs uppercase tracking-widest text-accent font-bold mb-3 block">
+                  {t("projects.subtitle")}
+                </span>
+                <h2 className="font-serif text-3xl sm:text-4xl font-bold text-foreground tracking-tight">
+                  {t("projects.title")}
+                </h2>
+              </div>
+
+              {/* Category Filter Pills */}
+              <div className="flex flex-wrap gap-2">
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                      selectedCategory === cat
+                        ? "bg-accent text-white shadow-sm"
+                        : "bg-background border border-border text-muted-foreground hover:text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {cat === "all" ? (language === "ar" ? "جميع المشاريع" : "All Projects") : cat}
+                  </button>
                 ))}
               </div>
             </div>
-          </div>
-        </div>
-      </section>
 
-      {/* CTA Section */}
-      <section className="py-24 px-6 bg-muted/30 geometric-pattern">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="text-xs uppercase tracking-[0.3em] text-accent font-semibold mb-4">{t('cta.subtitle')}</div>
-          <h2 className="font-serif text-3xl md:text-5xl font-bold text-foreground mb-6">
-            {t('cta.title_line1')}<br />
-            <span className="text-primary">{t('cta.title_line2')}</span>
-          </h2>
-          <p className="text-muted-foreground text-lg mb-10 max-w-2xl mx-auto">
-            {t('cta.description')}
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a
-              href="#contact"
-              data-testid="button-get-started"
-              className="cursor-pointer flex items-center justify-center gap-2 bg-accent text-white px-8 py-4 rounded-lg font-semibold hover:bg-accent/90 transition-all shadow-xl hover:shadow-2xl active:scale-95"
-            >
-              {t('cta.request')}
-              {dir === 'ltr' ? <ArrowRight className="w-4 h-4" /> : <ArrowRight className="w-4 h-4 rotate-180" />}
-            </a>
-            <button
-              data-testid="button-call-us"
-              className="cursor-pointer flex items-center justify-center gap-2 bg-card border border-border text-foreground px-8 py-4 rounded-lg font-semibold hover:bg-muted transition-all shadow-sm"
-            >
-              <Phone className="w-4 h-4" />
-              {t('cta.call')}
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Contact Section - Now Functional */}
-      <section id="contact" className="py-24 px-6 bg-muted/50 text-foreground">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16">
-            <div>
-              <div className="text-xs uppercase tracking-[0.3em] text-accent font-semibold mb-4">{t('contact.subtitle')}</div>
-              <h2 className="font-serif text-3xl md:text-4xl font-bold mb-6">
-                {t('contact.title')}
-              </h2>
-              <p className="text-muted-foreground text-lg mb-10">
-                {t('contact.description')}
-              </p>
-
-              <div className="space-y-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
-                    <MapPin className="w-5 h-5 text-accent" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold mb-1">{t('contact.info.office.title')}</h4>
-                    <p className="text-muted-foreground">{t('contact.info.office.text')}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
-                    <Phone className="w-5 h-5 text-accent" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold mb-1">{t('contact.info.phone.title')}</h4>
-                    <p className="text-muted-foreground">{t('contact.info.phone.text')}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
-                    <Mail className="w-5 h-5 text-accent" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold mb-1">{t('contact.info.email.title')}</h4>
-                    <p className="text-muted-foreground">{t('contact.info.email.text')}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-card backdrop-blur-sm rounded-2xl p-8 border border-border">
-              <h3 className="font-serif text-2xl font-bold mb-6">{t('contact.form.title')}</h3>
-              <form onSubmit={handleSubmit} className="space-y-5 relative">
-                {/* Honeypot field for bot spam protection - completely invisible to human users */}
-                <div style={{ opacity: 0, position: 'absolute', top: 0, left: 0, height: 0, width: 0, zIndex: -1, pointerEvents: 'none' }} aria-hidden="true">
-                  <input
-                    type="text"
-                    name="bot_trap"
-                    tabIndex={-1}
-                    autoComplete="off"
-                    value={formData.bot_trap || ""}
-                    onChange={(e) => setFormData(prev => ({ ...prev, bot_trap: e.target.value }))}
-                  />
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-5">
-                  <input
-                    type="text"
-                    placeholder={t('contact.form.name')}
-                    required
-                    maxLength={100}
-                    data-testid="input-name"
-                    value={formData.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors"
-                  />
-                  <input
-                    type="email"
-                    placeholder={t('contact.form.email')}
-                    required
-                    maxLength={255}
-                    data-testid="input-email"
-                    value={formData.email}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                    className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors"
-                  />
-                </div>
-                <input
-                  type="tel"
-                  placeholder={t('contact.form.phone')}
-                  maxLength={30}
-                  data-testid="input-phone"
-                  value={formData.phone}
-                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                  className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors"
-                />
-                <select
-                  data-testid="select-service"
-                  value={formData.service}
-                  onChange={(e) => setFormData(prev => ({ ...prev, service: e.target.value }))}
-                  className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:border-accent transition-colors"
+            {/* Projects Showcase Grid */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredProjects.map((project, idx) => (
+                <motion.div
+                  key={project.id}
+                  initial={{ opacity: 0, y: 15 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: idx * 0.06 }}
+                  className="bg-background border border-border rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between h-full group hover:border-accent/40 transition-colors"
                 >
-                  <option value="" className="bg-background text-foreground">{t('contact.form.service')}</option>
-                  {services.map(service => (
-                    <option key={service.id} value={service.title} className="bg-background text-foreground">
-                      {t('services.items')?.[service.title]?.title || service.title}
-                    </option>
-                  ))}
-                </select>
-                <textarea
-                  placeholder={t('contact.form.message')}
-                  required
-                  maxLength={3000}
-                  rows={5}
-                  data-testid="input-message"
-                  value={formData.message}
-                  onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value }))}
-                  className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors resize-none"
-                />
-                <button
-                  type="submit"
-                  disabled={contactMutation.isPending}
-                  data-testid="button-send-message"
-                  className="w-full cursor-pointer flex items-center justify-center gap-2 bg-accent text-white px-8 py-4 rounded-lg font-semibold hover:bg-accent/90 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {contactMutation.isPending ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      {t('contact.form.sending')}
-                    </>
-                  ) : (
-                    <>
-                      {t('contact.form.send')}
-                      {dir === 'ltr' ? <ArrowRight className="w-4 h-4" /> : <ArrowRight className="w-4 h-4 rotate-180" />}
-                    </>
-                  )}
-                </button>
-              </form>
+                  {/* Project Image Header */}
+                  <div className="relative h-56 overflow-hidden bg-slate-900">
+                    {project.imageUrl ? (
+                      <img
+                        src={project.imageUrl}
+                        alt={project.title}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-muted">
+                        <Building2 className="w-12 h-12 text-muted-foreground/40" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+
+                    {/* Badges */}
+                    <div className="absolute top-4 left-4 right-4 flex items-center justify-between">
+                      <span className="bg-black/60 backdrop-blur-md text-white text-[11px] font-semibold px-2.5 py-1 rounded border border-white/15">
+                        {project.category}
+                      </span>
+                      <span className="bg-black/60 backdrop-blur-md text-white/90 text-[11px] font-mono px-2.5 py-1 rounded border border-white/15">
+                        {project.year}
+                      </span>
+                    </div>
+
+                    {/* Location Tag */}
+                    <div className="absolute bottom-3 left-4 flex items-center gap-1.5 text-xs text-white/90 font-medium">
+                      <MapPin className="w-3.5 h-3.5 text-accent" />
+                      <span>{project.location}</span>
+                    </div>
+                  </div>
+
+                  {/* Project Meta Information */}
+                  <div className="p-6 flex flex-col justify-between flex-1">
+                    <div>
+                      <h3 className="font-serif text-xl font-bold text-foreground mb-2 leading-snug">
+                        {t(`projects.items.${project.title}.title`) || project.title}
+                      </h3>
+
+                      <p className="text-xs text-muted-foreground leading-relaxed mb-4 line-clamp-3">
+                        {t(`projects.items.${project.title}.description`) || project.description}
+                      </p>
+                    </div>
+
+                    {project.clientName && (
+                      <div className="pt-4 border-t border-border/70 flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">
+                          {language === "ar" ? "الجهة المالكة:" : "Client:"}
+                        </span>
+                        <span className="font-semibold text-foreground">
+                          {project.clientName}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Footer */}
-      <footer className="bg-muted/30 text-foreground py-12 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-8 pb-8 border-b border-border">
-            <div className="md:col-span-2">
-              <div className="flex flex-col items-start mb-4">
-                <img src={logo} alt="Enviro-Civec" className="h-10 w-auto mb-2" />
-                <span className="font-serif text-base font-bold tracking-widest uppercase text-foreground">
-                  {t('brandName')}
+        {/* ================= TESTIMONIALS & TRUST SECTION ================= */}
+        {testimonials.length > 0 && (
+          <section id="testimonials" className="py-24 px-6 bg-background border-b border-border">
+            <div className="max-w-7xl mx-auto">
+              <div className="text-center max-w-3xl mx-auto mb-16">
+                <span className="text-xs uppercase tracking-widest text-accent font-bold mb-3 block">
+                  {t("testimonials.subtitle")}
                 </span>
+                <h2 className="font-serif text-3xl sm:text-4xl font-bold text-foreground tracking-tight mb-4">
+                  {t("testimonials.title")}
+                </h2>
               </div>
-              <p className="text-muted-foreground max-w-md">
-                {t('footer.desc')}
-              </p>
+
+              <div className="grid md:grid-cols-3 gap-6">
+                {testimonials.map((test, index) => (
+                  <motion.div
+                    key={test.id || index}
+                    initial={{ opacity: 0, y: 15 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.4, delay: index * 0.08 }}
+                    className="bg-card border border-border rounded-2xl p-7 flex flex-col justify-between h-full shadow-sm"
+                  >
+                    <div>
+                      <Quote className="w-8 h-8 text-accent/40 mb-4" />
+                      <p className="text-sm text-foreground/90 leading-relaxed italic mb-6">
+                        "{test.content}"
+                      </p>
+                    </div>
+
+                    <div className="pt-4 border-t border-border/70 flex items-center justify-between">
+                      <div>
+                        <h4 className="font-serif text-sm font-bold text-foreground">
+                          {test.clientName}
+                        </h4>
+                        <p className="text-xs text-muted-foreground">
+                          {test.position} - {test.company}
+                        </p>
+                      </div>
+                      <div className="flex text-amber-400">
+                        {[...Array(test.rating || 5)].map((_, i) => (
+                          <Star key={i} className="w-3.5 h-3.5 fill-current" />
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
             </div>
-            <div>
-              <h4 className="font-bold mb-4">{t('footer.services')}</h4>
-              <ul className="space-y-2 text-muted-foreground text-sm">
-                {services.slice(0, 4).map(service => (
+          </section>
+        )}
+
+        {/* ================= CONSULTATION INQUIRY PORTAL ================= */}
+        <section id="contact" className="py-24 px-6 bg-card border-b border-border relative">
+          <div className="max-w-7xl mx-auto">
+            <div className="grid lg:grid-cols-12 gap-12 items-start">
+              {/* Left Contact Info Column */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+                className="lg:col-span-5 flex flex-col justify-between h-full"
+              >
+                <div>
+                  <span className="text-xs uppercase tracking-widest text-accent font-bold mb-3 block">
+                    {t("contact.subtitle")}
+                  </span>
+                  <h2 className="font-serif text-3xl sm:text-4xl font-bold text-foreground tracking-tight mb-6">
+                    {t("contact.title")}
+                  </h2>
+                  <p className="text-base text-muted-foreground leading-relaxed mb-8">
+                    {t("contact.description")}
+                  </p>
+
+                  {/* Direct Contact Cards */}
+                  <div className="space-y-4 mb-8">
+                    <div className="flex items-center gap-4 p-4 rounded-xl bg-background border border-border shadow-sm">
+                      <div className="p-3 rounded-lg bg-accent/10 text-accent">
+                        <Phone className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <span className="block text-xs text-muted-foreground font-medium">
+                          {t("contact.info.phone.label")}
+                        </span>
+                        <a href="tel:+201000000000" className="text-sm font-bold text-foreground hover:text-accent transition-colors">
+                          +20 2 2456 7890
+                        </a>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4 p-4 rounded-xl bg-background border border-border shadow-sm">
+                      <div className="p-3 rounded-lg bg-accent/10 text-accent">
+                        <Mail className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <span className="block text-xs text-muted-foreground font-medium">
+                          {t("contact.info.email.label")}
+                        </span>
+                        <a href="mailto:info@envirocivec.com" className="text-sm font-bold text-foreground hover:text-accent transition-colors">
+                          info@envirocivec.com
+                        </a>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4 p-4 rounded-xl bg-background border border-border shadow-sm">
+                      <div className="p-3 rounded-lg bg-accent/10 text-accent">
+                        <MapPin className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <span className="block text-xs text-muted-foreground font-medium">
+                          {t("contact.info.address.label")}
+                        </span>
+                        <span className="text-sm font-bold text-foreground">
+                          {t("contact.info.address.value")}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ISO Trust Stamp */}
+                <div className="p-5 rounded-2xl bg-muted/40 border border-border/80 flex items-center gap-3">
+                  <ShieldCheck className="w-8 h-8 text-accent shrink-0" />
+                  <div>
+                    <span className="block text-xs font-bold text-foreground">
+                      {language === "ar" ? "استشارات معتمدة دولياً" : "Certified Engineering Standards"}
+                    </span>
+                    <span className="text-[11px] text-muted-foreground">
+                      ISO 9001:2015 & ISO 14001 Certified Advisory
+                    </span>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Right Inquiry Form Column (Clean, fully clickable, no 3D transform) */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+                className="lg:col-span-7"
+              >
+                <div className="bg-background border border-border rounded-2xl p-8 sm:p-10 shadow-md relative">
+                  <h3 className="font-serif text-2xl font-bold text-foreground mb-6">
+                    {t("contact.form.title")}
+                  </h3>
+
+                  <form onSubmit={handleSubmit} className="space-y-5 relative">
+                    {/* Invisible Honeypot field for bot spam neutralization */}
+                    <div style={{ opacity: 0, position: "absolute", top: 0, left: 0, height: 0, width: 0, zIndex: -1, pointerEvents: "none" }} aria-hidden="true">
+                      <input
+                        type="text"
+                        name="bot_trap"
+                        tabIndex={-1}
+                        autoComplete="off"
+                        value={formData.bot_trap || ""}
+                        onChange={(e) => setFormData(prev => ({ ...prev, bot_trap: e.target.value }))}
+                      />
+                    </div>
+
+                    <div className="grid sm:grid-cols-2 gap-5">
+                      <div>
+                        <label className="block text-xs font-semibold text-foreground mb-2">
+                          {t("contact.form.name")} *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          maxLength={100}
+                          value={formData.name}
+                          onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                          className="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors text-sm"
+                          placeholder={language === "ar" ? "الاسم الكامل أو اسم الجهة" : "Your full name or organization"}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-foreground mb-2">
+                          {t("contact.form.email")} *
+                        </label>
+                        <input
+                          type="email"
+                          required
+                          maxLength={255}
+                          value={formData.email}
+                          onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                          className="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors text-sm"
+                          placeholder="name@company.com"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid sm:grid-cols-2 gap-5">
+                      <div>
+                        <label className="block text-xs font-semibold text-foreground mb-2">
+                          {t("contact.form.phone")}
+                        </label>
+                        <input
+                          type="tel"
+                          maxLength={30}
+                          value={formData.phone}
+                          onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                          className="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors text-sm"
+                          placeholder="+20 ..."
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-foreground mb-2">
+                          {t("contact.form.service")}
+                        </label>
+                        <select
+                          value={formData.service}
+                          onChange={(e) => setFormData(prev => ({ ...prev, service: e.target.value }))}
+                          className="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground focus:outline-none focus:border-accent transition-colors text-sm cursor-pointer"
+                        >
+                          <option value="">{language === "ar" ? "اختر مجال الاستشارة المطلوبة" : "Select consulting domain"}</option>
+                          {services.map((service) => (
+                            <option key={service.id} value={service.title}>
+                              {t(`services.items.${service.title}.title`) || service.title}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground mb-2">
+                        {t("contact.form.message")} *
+                      </label>
+                      <textarea
+                        required
+                        rows={4}
+                        maxLength={3000}
+                        value={formData.message}
+                        onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value }))}
+                        className="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors resize-none text-sm"
+                        placeholder={language === "ar" ? "اذكر تفاصيل المشروع، الموقع، ونطاق الأعمال المطلوب..." : "Provide project scope, location, and requirements..."}
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={contactMutation.isPending}
+                      className="w-full inline-flex items-center justify-center gap-2 bg-accent text-white px-8 py-4 rounded-lg font-semibold hover:bg-accent/90 transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-base"
+                    >
+                      {contactMutation.isPending ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <span>{t("contact.form.sending")}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>{t("contact.form.send")}</span>
+                          {dir === "ltr" ? <ArrowRight className="w-4 h-4" /> : <ArrowRight className="w-4 h-4 rotate-180" />}
+                        </>
+                      )}
+                    </button>
+                  </form>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      {/* ================= ARCHITECTURAL FOOTER ================= */}
+      <footer className="bg-background text-foreground py-16 px-6 border-t border-border">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-12 gap-12 pb-12 border-b border-border/80">
+            {/* Brand Intro */}
+            <div className="md:col-span-5 flex flex-col items-start">
+              <Link href="/" className="flex items-center gap-3 mb-4 cursor-pointer">
+                <img src={logo} alt="Enviro Civec" className="h-10 w-auto object-contain" />
+                <span className="font-serif text-lg font-bold tracking-tight text-foreground">
+                  {t("brandName")}
+                </span>
+              </Link>
+              <p className="text-sm text-muted-foreground leading-relaxed max-w-sm mb-6">
+                {t("footer.desc")}
+              </p>
+              <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground/80">
+                <span>EST. 1994</span>
+                <span>•</span>
+                <span>CAIRO, EGYPT</span>
+                <span>•</span>
+                <span>ISO 9001 / 14001</span>
+              </div>
+            </div>
+
+            {/* Quick Links */}
+            <div className="md:col-span-3">
+              <h4 className="font-serif font-bold text-sm text-foreground uppercase tracking-wider mb-4">
+                {t("footer.services")}
+              </h4>
+              <ul className="space-y-2.5 text-sm text-muted-foreground">
+                {services.slice(0, 5).map((service) => (
                   <li key={service.id}>
-                    <a href="#services" className="hover:text-primary transition-colors">
-                      {t('services.items')?.[service.title]?.title || service.title}
-                    </a>
+                    <button
+                      onClick={() => scrollToSection("services")}
+                      className="hover:text-accent transition-colors text-start cursor-pointer"
+                    >
+                      {t(`services.items.${service.title}.title`) || service.title}
+                    </button>
                   </li>
                 ))}
               </ul>
             </div>
-            <div>
-              <h4 className="font-bold mb-4">{t('footer.company')}</h4>
-              <ul className="space-y-2 text-muted-foreground text-sm">
-                <li><a href="#about" className="hover:text-primary transition-colors">{t('footer.links.about')}</a></li>
-                <li><a href="#projects" className="hover:text-primary transition-colors">{t('footer.links.projects')}</a></li>
-                <li><a href="#testimonials" className="hover:text-primary transition-colors">{t('footer.links.testimonials')}</a></li>
-                <li><a href="#contact" className="hover:text-primary transition-colors">{t('footer.links.contact')}</a></li>
+
+            {/* Company Links */}
+            <div className="md:col-span-4">
+              <h4 className="font-serif font-bold text-sm text-foreground uppercase tracking-wider mb-4">
+                {t("footer.company")}
+              </h4>
+              <ul className="space-y-2.5 text-sm text-muted-foreground">
+                <li>
+                  <button onClick={() => scrollToSection("about")} className="hover:text-accent transition-colors cursor-pointer">
+                    {t("footer.links.about")}
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => scrollToSection("methodology")} className="hover:text-accent transition-colors cursor-pointer">
+                    {language === "ar" ? "منهجية العمل" : "Methodology"}
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => scrollToSection("projects")} className="hover:text-accent transition-colors cursor-pointer">
+                    {t("footer.links.projects")}
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => scrollToSection("contact")} className="hover:text-accent transition-colors cursor-pointer">
+                    {t("footer.links.contact")}
+                  </button>
+                </li>
               </ul>
             </div>
           </div>
 
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-8">
-            <div className="text-muted-foreground text-sm">
-              {t('footer.rights')}
+          {/* Bottom Bar */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 text-xs text-muted-foreground">
+            <div>
+              {t("footer.rights")}
             </div>
-            <div className="flex gap-6 text-sm text-muted-foreground">
-              <Link href="/privacy-policy" className="hover:text-primary transition-colors">{t('footer.privacy')}</Link>
-              <Link href="/terms-of-service" className="hover:text-primary transition-colors">{t('footer.terms')}</Link>
+            <div className="flex gap-6">
+              <Link href="/privacy-policy" className="hover:text-accent transition-colors cursor-pointer">
+                {t("footer.privacy")}
+              </Link>
+              <Link href="/terms-of-service" className="hover:text-accent transition-colors cursor-pointer">
+                {t("footer.terms")}
+              </Link>
             </div>
           </div>
         </div>
@@ -818,14 +1053,15 @@ export default function Home() {
       <motion.button
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: showScrollTop ? 1 : 0, scale: showScrollTop ? 1 : 0.8 }}
-        transition={{ duration: 0.3 }}
-        onClick={scrollToTop}
-        className={`fixed bottom-8 right-8 z-50 p-3 rounded-full shadow-lg transition-colors ${showScrollTop ? "pointer-events-auto" : "pointer-events-none"
-          } bg-primary text-primary-foreground hover:bg-primary/90`}
+        transition={{ duration: 0.2 }}
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        className={`fixed bottom-8 right-8 z-50 p-3.5 rounded-full shadow-xl transition-colors ${
+          showScrollTop ? "pointer-events-auto" : "pointer-events-none"
+        } bg-accent text-white hover:bg-accent/90 cursor-pointer`}
         aria-label="Scroll to top"
       >
-        <ArrowUp className="w-6 h-6" />
+        <ArrowUp className="w-5 h-5" />
       </motion.button>
-    </div >
+    </div>
   );
 }
